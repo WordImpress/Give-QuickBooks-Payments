@@ -88,7 +88,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		/**
 		 * Setup Give - QuickBooks Payments.
 		 *
-		 * @since  1.1
+		 * @since  1.0
 		 * @access private
 		 */
 		private function setup() {
@@ -246,7 +246,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		 * The whole idea of the singleton design pattern is that there is a single
 		 * object therefore, we don't want the object to be cloned.
 		 *
-		 * @since  1.1
+		 * @since  1.0
 		 * @access protected
 		 *
 		 * @return void
@@ -259,7 +259,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		/**
 		 * Disable Unserialize of the class.
 		 *
-		 * @since  1.1
+		 * @since  1.0
 		 * @access protected
 		 *
 		 * @return void
@@ -272,7 +272,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		/**
 		 * Constructor Function.
 		 *
-		 * @since  1.1
+		 * @since  1.0
 		 * @access protected
 		 */
 		public function __construct() {
@@ -282,7 +282,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		/**
 		 * Reset the instance of the class
 		 *
-		 * @since  1.1
+		 * @since  1.0
 		 * @access public
 		 */
 		public static function reset() {
@@ -292,7 +292,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		/**
 		 * Includes.
 		 *
-		 * @since  1.1
+		 * @since  1.0
 		 * @access private
 		 *
 		 * - Give_QuickBooks_Admin. Defines all hooks for the admin area.
