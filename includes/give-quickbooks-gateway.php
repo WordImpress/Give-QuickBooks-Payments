@@ -81,6 +81,20 @@ class Give_QuickBooks_Gateway {
 				'type' => 'title',
 			),
 			array(
+				'name'    => __( 'Client ID', 'give-quickbooks-payments' ),
+				'desc'    => __( 'Please enter Client ID from your application.', 'give-quickbooks-payments' ),
+				'id'      => 'give_quickbooks_client_id',
+				'default' => '',
+				'type'    => 'text',
+			),
+			array(
+				'name'    => __( 'Client Secret', 'give-quickbooks-payments' ),
+				'desc'    => __( 'Please enter Client Secret from your application.', 'give-quickbooks-payments' ),
+				'id'      => 'give_quickbooks_client_secret',
+				'default' => '',
+				'type'    => 'text',
+			),
+			array(
 				'name'  => __( 'Give QuickBooks Gateway Settings Docs Link', 'give-gocardless' ),
 				'url'   => esc_url( 'https://givewp.com/documentation/add-ons/#/' ),
 				'title' => __( 'Give QuickBooks Gateway Settings', 'give-quickbooks-payments' ),
@@ -103,7 +117,7 @@ class Give_QuickBooks_Gateway {
 	 * @return array
 	 */
 	public function add_section( $sections ) {
-		$sections['quickbooks'] = __( 'QuickBooks', 'give-quickbooks-payments' );
+		$sections['quickbooks'] = __( 'QuickBooks Settings', 'give-quickbooks-payments' );
 
 		return $sections;
 	}
