@@ -237,7 +237,12 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			if ( ! defined( 'GIVE_QUICKBOOKS_MIN_GIVE_VER' ) ) {
 				define( 'GIVE_QUICKBOOKS_MIN_GIVE_VER', '2.0' );
 			}
-
+			if ( ! defined( 'GIVE_QUICKBOOKS_SANDBOX_BASE_URL' ) ) {
+				define( 'GIVE_QUICKBOOKS_SANDBOX_BASE_URL', 'https://sandbox.api.intuit.com' );
+			}
+			if ( ! defined( 'GIVE_QUICKBOOKS_PRODUCTION_BASE_URL' ) ) {
+				define( 'GIVE_QUICKBOOKS_PRODUCTION_BASE_URL', 'https://api.intuit.com' );
+			}
 		}
 
 		/**
