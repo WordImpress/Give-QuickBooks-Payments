@@ -243,6 +243,9 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			if ( ! defined( 'GIVE_QUICKBOOKS_PRODUCTION_BASE_URL' ) ) {
 				define( 'GIVE_QUICKBOOKS_PRODUCTION_BASE_URL', 'https://api.intuit.com' );
 			}
+			if ( ! defined( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT' ) ) {
+				define( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT', 'https://oauth.platform.intuit.com/oauth2/v2/tokens/bearer' );
+			}
 		}
 
 		/**
@@ -271,7 +274,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		 */
 		public function __wakeup() {
 			// Unserialize instances of the class is forbidden.
-			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'give-quickbooks-payments' ), '1.1' );
+			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'give-quickbooks-payments' ), '1.0' );
 		}
 
 		/**

@@ -52,67 +52,90 @@ class Give_QuickBooks_Gateway {
 			return false;
 		}
 
-		$responseState = $_GET['state'];
+		$responseState = ! empty( $_GET['state'] ) ? give_clean( $_GET['state'] ) : 'RandomState';
 		if ( strcmp( 'RandomState', $responseState ) != 0 ) {
 			throw new Exception( "The state is not correct from Intuit Server. Consider your app is hacked." );
 		}
 
-		if ( ! isset( $_GET["code"] ) ) {
+		// Get Authorization Code.
+		$code = ! empty( $_GET['code'] ) ? give_clean( $_GET['code'] ) : 0;
+		if ( ! isset( $code ) && ! empty( $code ) ) {
 
 			$this->get_connect_url();
 
 		} else {
 
-			$code          = give_clean( $_GET['code'] );
+			give_update_option( 'give_quickbooks_auth_code', $code );
 			$responseState = $_GET['state'];
 
 			if ( strcmp( 'RandomState', $responseState ) != 0 ) {
 				throw new Exception( "The state is not correct from Intuit Server. Consider your app is hacked." );
 			}
 
-			$result = $this->getAccessToken( $tokenEndPointUrl = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', $code, $grant_type = 'authorization_code' );
+			$result = $this->getAccessToken( GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT, $code, 'authorization_code' );
+
+			// Check the response code
+			$response_code    = wp_remote_retrieve_response_code( $result );
+			$response_message = wp_remote_retrieve_response_message( $result );
+			$response_body    = wp_remote_retrieve_body( $result );
+			$response_obj     = json_decode( $response_body );
+
+			if ( 400 === $response_code ) {
+				$this->get_connect_url();
+			}
+
+			$refresh_token = $response_obj->refresh_token;
+			$access_token  = $response_obj->access_token;
 
 
-			$result        = json_decode( $result );
-			$refresh_token = $result['refresh_token'];
-			$access_token  = $result['access_token'];
+			give_update_option( 'give_quickbooks_access_token', $access_token );
+			give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
 
-			update_option( 'give_quickbooks_access_token', $access_token );
-			update_option( 'give_quickbooks_refresh_token', $refresh_token );
 		}
 
 	}
 
-	public function getAccessToken( $tokenEndPointUrl, $code, $grant_type ) {
+	public function getAccessToken( $token_end_point_url, $code, $grant_type ) {
 		if ( ! isset( $grant_type ) ) {
 			throw new InvalidArgumentException( 'The grant_type is mandatory.', InvalidArgumentException::INVALID_GRANT_TYPE );
 		}
 
-		$authorizationHeaderInfo = $this->generateAuthorizationHeader();
+		// Get Authorization Header.
+		$authorization_header_info = $this->generate_authorization_header();
 
 		//Try catch???
-		$result = wp_remote_post( $tokenEndPointUrl, array(
+		$result = wp_remote_post( $token_end_point_url, array(
 			'headers' => array(
-				'Authorization' => $authorizationHeaderInfo,
+				'Authorization' => $authorization_header_info,
+				'Accept'        => 'application/json',
 				'Content-Type'  => 'application/x-www-form-urlencoded',
+				'Cache-Control' => 'no-cache',
 			),
 			'body'    => array(
 				'grant_type'   => $grant_type,
 				'code'         => $code,
-				'redirect_uri' => 'http://quickbook.test/wp-admin/edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=quickbooks',
+				'redirect_uri' => $this->get_setting_url(),
 			),
 		) );
 
 		return $result;
 	}
 
-	private function generateAuthorizationHeader() {
-		$client_id                    = give_get_option( 'give_quickbooks_client_id' );
-		$client_secret                = give_get_option( 'give_quickbooks_client_secret' );
-		$encodedClientIDClientSecrets = base64_encode( $client_id . ':' . $client_secret );
-		$authorizationheader          = 'Basic ' . $encodedClientIDClientSecrets;
+	/**
+	 * Get authorization header information.
+	 *
+	 * @since  1.0
+	 * @access private
+	 *
+	 * @return string
+	 */
+	private function generate_authorization_header() {
+		$client_id                        = give_get_option( 'give_quickbooks_client_id' );
+		$client_secret                    = give_get_option( 'give_quickbooks_client_secret' );
+		$encoded_client_id_client_secrets = base64_encode( $client_id . ':' . $client_secret );
+		$authorization_header             = 'Basic ' . $encoded_client_id_client_secrets;
 
-		return $authorizationheader;
+		return $authorization_header;
 	}
 
 	/**
@@ -173,10 +196,16 @@ class Give_QuickBooks_Gateway {
 				'type'    => 'text',
 			),
 			array(
-				'name' => __( 'Connect / Disconnect', 'give-gocardless' ),
+				'name' => __( 'Connect / Disconnect', 'give-quickbooks-payments' ),
 				'desc' => 'Connect / Disconnect Development or Production.',
 				'id'   => 'give_quickbooks_auth_button',
 				'type' => 'quickbooks_auth_button',
+			),
+			array(
+				'name' => __( 'Collect Billing Details', 'give-quickbooks-payments' ),
+				'desc' => __( 'This option will enable the billing details section for Stripe which requires the donor\'s address to complete the donation. These fields are not required by QuickBooks to process the transaction, but you may have the need to collect the data.', 'give-quickbooks-payments' ),
+				'id'   => 'quickbooks_collect_billing',
+				'type' => 'checkbox',
 			),
 			array(
 				'name'  => __( 'Give QuickBooks Gateway Settings Docs Link', 'give-gocardless' ),
@@ -219,12 +248,6 @@ class Give_QuickBooks_Gateway {
 	 * @return  false               if not connected.
 	 */
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
-
-		// Check if connected or not.
-		$is_connected = $this->is_connected();
-
-		// Get the connected data from the database.
-		$get_connected_data = self::get_quickbooks_auth_data();
 		?>
 		<tr valign="top" <?php echo ! empty( $value['wrapper_class'] ) ? 'class="' . $value['wrapper_class'] . '"' : '' ?>>
 			<th scope="row" class="titledesc">
@@ -232,8 +255,8 @@ class Give_QuickBooks_Gateway {
 			</th>
 			<td class="gocardless-auth" colspan="2">
 				<a class="connect-quickbooks-button"
-				   href="<?php echo ( $is_connected ) ? $this->get_disconnect_url() : $this->get_connect_url(); ?>"><img width="225px"
-				                                                                                                         src="<?php echo GIVE_QUICKBOOKS_PLUGIN_URL . 'assets/images/C2QB_green_btn_lg_default.png' ?>">
+				   href="<?php echo $this->get_connect_url(); ?>">
+					<img width="225px" src="<?php echo GIVE_QUICKBOOKS_PLUGIN_URL . 'assets/images/C2QB_green_btn_lg_default.png' ?>">
 				</a>
 			</td>
 		</tr>
@@ -250,9 +273,6 @@ class Give_QuickBooks_Gateway {
 	 *          bool|false    if access_token is not available.
 	 */
 	protected function is_connected() {
-
-		// Get the authentication setting of QuickBooks.
-		$auth_data = self::get_quickbooks_auth_data();
 
 		// Check whether there is action token is available or not.
 		if ( isset( $auth_data['access_token'] ) && ! empty( $auth_data['access_token'] ) ) {
@@ -319,6 +339,8 @@ class Give_QuickBooks_Gateway {
 		return $this->get_connect_url();
 	}
 
+
+
 	/**
 	 * Generate Authentication with QuickBooks dynamically.
 	 *
@@ -331,9 +353,10 @@ class Give_QuickBooks_Gateway {
 	 */
 	public function get_connect_url( $args = array() ) {
 
+
 		// Create argument list.
 		$args = wp_parse_args( $args, array(
-			'redirect_uri'          => 'http://quickbook.test/wp-admin/edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=quickbooks',
+			'redirect_uri'          => $this->get_setting_url(),
 			'client_id'             => give_get_option( 'give_quickbooks_client_id' ),
 			'scope'                 => 'com.intuit.quickbooks.payment',
 			'give_quickbooks_nonce' => wp_create_nonce( 'give_quickbooks_nonce' ),
