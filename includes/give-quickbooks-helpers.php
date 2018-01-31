@@ -20,9 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return bool|string
  */
 function generate_unique_request_id() {
-	$random_id = substr( md5( mt_rand() ), 0, 32 );
+	$guid = sprintf('%04x%04x-%04x-%03x4-%04x-%04x%04x%04x',
+		mt_rand(0, 65535), mt_rand(0, 65535),
+		mt_rand(0, 65535),
+		mt_rand(0, 4095),
+		bindec(substr_replace(sprintf('%016b', mt_rand(0, 65535)), '01', 6, 2)),
+		mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
+	);
 
-	return $random_id;
+	return $guid;
 }
 
 /**
@@ -42,7 +48,6 @@ function generate_unique_request_id() {
 function give_quickbooks_credit_card_form( $form_id, $echo = true ) {
 
 	$billing_fields_enabled = give_get_option( 'quickbooks_collect_billing' );
-
 
 	ob_start();
 
