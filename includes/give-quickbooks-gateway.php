@@ -420,4 +420,108 @@ class Give_QuickBooks_Gateway {
 		return $authorizationRequestUrl;
 	}
 
+	/**
+	 * GoCardless process the payment.
+	 *
+	 * @access  public
+	 * @since   1.0.0
+	 *
+	 * @param   array $payment_data Pass submitted payment data.
+	 *
+	 * @return  bool | false            if process payment failed or there is any error
+	 *                                  occurred while doing payment process.
+	 */
+	public static function process_payment( $payment_data ) {
+
+		// Validate the gateway_nonce.
+		give_validate_nonce( $payment_data['gateway_nonce'], 'give-gateway' );
+
+		$access_token_result = Give_QuickBooks_API::get_access_token( $payment_data );
+
+		if ( is_wp_error( $access_token_result ) ) {
+
+			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $access_token_result->get_error_message() );
+
+			give_set_error( 'request_error', $access_token_result->get_error_message() );
+			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+			exit;
+		}
+
+		// Create new payment for donation.
+		$payment_id = self::quickbooks_create_payment( $payment_data );
+
+		// Check if payment is created.
+		if ( empty( $payment_id ) ) {
+
+			// Record the error.
+			give_record_gateway_error( __( 'Payment Error', 'give-quickbooks-payments' ), sprintf( __( 'Payment creation failed before sending donor to QuickBooks. Payment data: %s', 'give-quickbooks-payments' ), json_encode( $payment_data ) ), $payment_id );
+
+			give_set_error( 'payment_creation_error', __( 'Payment creation failed. Please try again', 'give-quickbooks-payments' ) );
+
+			// Problems? Send back.
+			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+		}
+
+		// This access token expiry in 15 min.
+		$access_token = $access_token_result->value;
+
+		// Process Payment.
+		$payment_obj = Give_QuickBooks_API::quickbooks_payment_request( $payment_data, $access_token );
+
+		return false;
+	}
+
+	/**
+	 * Get success donation page url.
+	 *
+	 * @since   1.0.0
+	 * @access  public
+	 *
+	 * @param   int $payment_id Donation payment id.
+	 *
+	 * @return  string get give donation url with some query string.
+	 */
+	protected static function get_success_page( $payment_id ) {
+
+		$success_redirect = add_query_arg( array(
+			'payment_id'              => $payment_id,
+		), get_permalink( give_get_option( 'success_page' ) ) );
+
+		return $success_redirect;
+	}
+
+	/**
+	 * Create a new payment.
+	 *
+	 * @since   1.0.0
+	 * @access  public
+	 *
+	 * @param   array $payment_data Donation payment data.
+	 *
+	 * @return  int     Get payment ID.
+	 */
+	public static function quickbooks_create_payment( $payment_data ) {
+
+		$form_id  = intval( $payment_data['post_data']['give-form-id'] );
+		$price_id = isset( $payment_data['post_data']['give-price-id'] ) ? $payment_data['post_data']['give-price-id'] : '';
+
+		// Collect payment data.
+		$insert_payment_data = array(
+			'price'           => $payment_data['price'],
+			'give_form_title' => $payment_data['post_data']['give-form-title'],
+			'give_form_id'    => $form_id,
+			'give_price_id'   => $price_id,
+			'date'            => $payment_data['date'],
+			'user_email'      => $payment_data['user_email'],
+			'purchase_key'    => $payment_data['purchase_key'],
+			'currency'        => give_get_currency(),
+			'user_info'       => $payment_data['user_info'],
+			'status'          => 'pending',
+			'gateway'         => GIVE_QUICKBOOKS_SLUG,
+		);
+
+		// Record the pending payment.
+		return give_insert_payment( $insert_payment_data );
+	}
+
 }
