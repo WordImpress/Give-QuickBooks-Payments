@@ -244,7 +244,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 				define( 'GIVE_QUICKBOOKS_PRODUCTION_BASE_URL', 'https://api.intuit.com' );
 			}
 			if ( ! defined( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT' ) ) {
-				define( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT', 'https://oauth.platform.intuit.com/oauth2/v2/tokens/bearer' );
+				define( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT', 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer' );
 			}
 		}
 
@@ -321,6 +321,11 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			 * The file is includes for QuickBooks gateway helpers.
 			 */
 			require_once GIVE_QUICKBOOKS_PLUGIN_DIR . '/includes/give-quickbooks-helpers.php';
+
+			/**
+			 * QuickBooks API.
+			 */
+			require_once GIVE_QUICKBOOKS_PLUGIN_DIR . '/includes/give-quickbooks-api.php';
 
 			self::$instance->plugin_admin      = new Give_QuickBooks_Admin();
 			self::$instance->quickbooks_gateway = new Give_QuickBooks_Gateway();
