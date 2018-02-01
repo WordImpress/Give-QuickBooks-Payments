@@ -73,7 +73,7 @@ class Give_QuickBooks_API {
 	 *
 	 * @since 1.0
 	 *
-	 * @param $payment_data
+	 * @param array $payment_data
 	 *
 	 * @return array|mixed|object
 	 */
@@ -107,25 +107,64 @@ class Give_QuickBooks_API {
 	}
 
 	/**
+	 * Looking for access token every time to check if expired.
+	 *
+	 * Check if current access token expires? If yes then recall api using refresh_token.
+	 * 'access_token' expires every 1 hour (3600s).
+	 *
+	 * @since 1.0
+	 * @return bool
+	 */
+	public static function looking_for_access_token() {
+
+		// Get Auth code from db.
+		$code = give_qb_get_auth_code();
+
+		// Bail out if QuickBooks Auth Code empty.
+		if ( empty( $code ) ) {
+			return false;
+		}
+
+		// Request for new access token if current access_token expires and get status '401'.
+		$refresh_token_obj = self::get_auth_refresh_access_token();
+
+		$refresh_token = $refresh_token_obj->refresh_token;
+		$access_token  = $refresh_token_obj->access_token;
+
+		give_update_option( 'give_quickbooks_access_token', $access_token );
+		give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
+
+	}
+
+	/**
 	 * QuickBooks Payment process request.
 	 *
 	 * @since 1.0
 	 *
-	 * @param $payment_data
-	 * @param $access_token
+	 * @param array  $payment_data
+	 * @param string $access_token
+	 *
+	 * @return object
 	 */
 	public static function quickbooks_payment_request( $payment_data, $access_token ) {
 
-		//$card_expiry = explode("/",$payment_data["post_data"]["card_expiry"]);
-		//$card_expiry_month = trim($card_expiry[0]);
+		$card_expiry       = explode( '/', $payment_data['post_data']['card_expiry'] );
+		$card_expiry_month = trim( $card_expiry[0] );
 
 		$request_data = array(
-			'amount'   => "14.00",
+			'amount'   => $payment_data['price'],
 			'token'    => $access_token,
 			'currency' => give_get_currency(),
 			'context'  => array(
 				'mobile'      => false,
 				'isEcommerce' => true,
+			),
+			'card'     => array(
+				'expYear'  => $payment_data['post_data']['card-expiry-year'],
+				'expMonth' => $card_expiry_month,
+				'cvc'      => $payment_data['post_data']['card_cvc'],
+				'number'   => $payment_data['card_info']['card_number'],
+				'name'     => $payment_data['post_data']['card_name'],
 			),
 		);
 
@@ -133,8 +172,9 @@ class Give_QuickBooks_API {
 		$access_token = give_qb_get_oauth_access_token();
 
 		$authorization = 'Bearer ' . $access_token;
+		$base_url      = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
 
-		$result = wp_remote_post( 'https://sandbox.api.intuit.com/quickbooks/v4/payments/charges', array(
+		$result = wp_remote_post( $base_url . '/quickbooks/v4/payments/charges', array(
 			'headers' => array(
 				'content-type'  => 'application/json',
 				'Request-Id'    => give_qb_generate_unique_request_id(),
@@ -143,15 +183,19 @@ class Give_QuickBooks_API {
 			'body'    => $data,
 		) );
 
+
 		$response_body = wp_remote_retrieve_body( $result );
 		$response_obj  = json_decode( $response_body );
 
-		echo "<pre>";
-		print_r( $response_obj );
+		if ( ! isset( $response_obj ) ) {
 
-		exit;
+			if ( 401 === $result['response']['code'] ) {
+				self::looking_for_access_token();
+				self::quickbooks_payment_request( $payment_data, $access_token );
+			}
+		}
 
-		//return $response_obj;
+		return $response_obj;
 	}
 
 }

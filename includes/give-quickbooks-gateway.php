@@ -34,7 +34,7 @@ class Give_QuickBooks_Gateway {
 		$this->get_access_token_from_auth_code();
 
 		// Looking for access token if access token expires and get new 'access_token' from the 'refresh_token'
-		$this->looking_for_access_token();
+		//$this->looking_for_access_token();
 
 		// Registering QuickBooks Payment gateway with give.
 		add_filter( 'give_payment_gateways', array( $this, 'register_gateway' ) );
@@ -48,54 +48,6 @@ class Give_QuickBooks_Gateway {
 
 		// Process Payment.
 		add_action( 'give_gateway_' . GIVE_QUICKBOOKS_SLUG, array( $this, 'process_payment' ) );
-	}
-
-
-	/**
-	 * Looking for access token every time to check if expired.
-	 *
-	 * Check if current access token expires? If yes then recall api using refresh_token.
-	 * 'access_token' expires every 1 hour (3600s).
-	 *
-	 * @since 1.0
-	 * @return bool
-	 */
-	public function looking_for_access_token() {
-
-		// Bail out if get Code in redirect URL.
-		if ( ! empty( $_GET['code'] ) ) {
-			return false;
-		}
-
-		// Bail out if get realmId in redirect URL.
-		if ( ! empty( $_GET['realmId'] ) ) {
-			return false;
-		}
-
-		// Get Auth code from db.
-		$code = give_qb_get_auth_code();
-
-		// Bail out if QuickBooks Auth Code empty.
-		if ( empty( $code ) ) {
-			return false;
-		}
-
-		$result = Give_QuickBooks_API::get_auth_access_token( $code, 'authorization_code' );
-
-		// Check the response code
-		$response_code = wp_remote_retrieve_response_code( $result );
-
-		// Request for new access token if current access_token expires and get status '401'.
-		if ( 401 === $response_code ) {
-			$refresh_token_obj = Give_QuickBooks_API::get_auth_refresh_access_token();
-
-			$refresh_token = $refresh_token_obj->refresh_token;
-			$access_token  = $refresh_token_obj->access_token;
-
-			give_update_option( 'give_quickbooks_access_token', $access_token );
-			give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
-		}
-
 	}
 
 	/**
@@ -322,14 +274,17 @@ class Give_QuickBooks_Gateway {
 		// Get access token from customer cc data.
 		$access_token_result = Give_QuickBooks_API::get_access_token( $payment_data );
 
-		if ( is_wp_error( $access_token_result ) ) {
+		// Check is any error?
+		give_qb_handle_error( $access_token_result );
 
-			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $access_token_result->get_error_message() );
+		// This access token expiry in 15 min.
+		$access_token = $access_token_result->value;
 
-			give_set_error( 'request_error', $access_token_result->get_error_message() );
-			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
-			exit;
-		}
+		// Process Payment.
+		$payment_process_response = Give_QuickBooks_API::quickbooks_payment_request( $payment_data, $access_token );
+
+		// Check any error?
+		give_qb_handle_error( $payment_process_response );
 
 		// Create new payment for donation.
 		$payment_id = self::quickbooks_create_payment( $payment_data );
@@ -346,13 +301,25 @@ class Give_QuickBooks_Gateway {
 			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
 		}
 
-		// This access token expiry in 15 min.
-		$access_token = $access_token_result->value;
+		// Set the payment transaction ID.
+		give_set_payment_transaction_id( $payment_id, $payment_process_response->id );
 
-		// Process Payment.
-		$payment_obj = Give_QuickBooks_API::quickbooks_payment_request( $payment_data, $access_token );
+		switch ( $payment_process_response->status ) {
+			case ( 'CAPTURED' ):
+				give_update_payment_status( $payment_id, 'publish' );
+				break;
+			case ( 'CANCELLED' ):
+				give_update_payment_status( $payment_id, 'cancelled' );
+				break;
+			case ( 'REFUNDED' ):
+				give_update_payment_status( $payment_id, 'refunded' );
+				break;
+		}
 
-		return false;
+		// Redirect to give success page.
+		give_send_to_success_page();
+
+		return true;
 	}
 
 	/**
