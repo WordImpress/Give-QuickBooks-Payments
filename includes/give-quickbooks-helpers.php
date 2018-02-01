@@ -115,6 +115,43 @@ function give_qb_authorization_header() {
 }
 
 /**
+ * Handle Error message.
+ *
+ * @since 1.0
+ * @param $parsed_resp
+ */
+function give_qb_handle_error( $parsed_resp ) {
+
+	if ( ! empty( $parsed_resp->errors ) ) {
+
+		$message = '';
+		$errors  = array();
+		foreach ( $parsed_resp->errors as $err ) {
+			$err_item = '';
+
+			if ( ! empty( $err->message ) ) {
+				$err_item .= ucfirst( $err->message ) . ' ';
+			}
+
+			if ( ! empty( $err->moreInfo ) ) {
+				$err_item .= $err->moreInfo;
+			}
+
+			$errors[] = $err_item;
+		}
+
+		if ( ! empty( $errors ) ) {
+			$message .= implode( ', ', $errors );
+		}
+
+		give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $message );
+		give_set_error( 'request_error', $message );
+		give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+		exit;
+	}
+}
+
+/**
  * Stripe uses it's own credit card form because the card details are tokenized.
  *
  * We don't want the name attributes to be present on the fields in order to
