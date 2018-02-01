@@ -11,24 +11,6 @@
 class Give_QuickBooks_API {
 
 	/**
-	 * GoCardless Base URL
-	 *
-	 * @var     string $baseurl QuickBooks base url for the payment.
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private static $baseurl = 'https://api.intuit.com/';
-
-	/**
-	 * GoCardless Sandbox URL
-	 *
-	 * @var     string $sandbox_base url QuickBooks sandbox API url.
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private static $sandbox_baseurl = 'https://sandbox.api.intuit.com/';
-
-	/**
 	 * Get oAuth access token from Auth Code.
 	 *
 	 * @since 1.0
@@ -89,26 +71,29 @@ class Give_QuickBooks_API {
 	/**
 	 * Get access token from the Customer card information at the time of donation.
 	 *
+	 * @since 1.0
+	 *
 	 * @param $payment_data
 	 *
 	 * @return array|mixed|object
 	 */
 	public static function get_access_token( $payment_data ) {
 
-		$card_expiry       = explode( "/", $payment_data["post_data"]["card_expiry"] );
+		$card_expiry       = explode( "/", $payment_data['post_data']['card_expiry'] );
 		$card_expiry_month = trim( $card_expiry[0] );
 
-		$card_array["card"] = array(
-			"expYear"  => $payment_data["post_data"]["card-expiry-year"],
-			"expMonth" => $card_expiry_month,
-			"cvc"      => $payment_data["post_data"]["card_cvc"],
-			"number"   => $payment_data["post_data"]["card_number"],
-			"name"     => $payment_data["post_data"]["card_name"],
+		$card_array['card'] = array(
+			'expYear'  => $payment_data['post_data']['card-expiry-year'],
+			'expMonth' => $card_expiry_month,
+			'cvc'      => $payment_data['post_data']['card_cvc'],
+			'number'   => $payment_data['post_data']['card_number'],
+			'name'     => $payment_data['post_data']['card_name'],
 		);
 
 		$data = wp_json_encode( $card_array );
 
-		$result = wp_remote_post( 'https://sandbox.api.intuit.com/quickbooks/v4/payments/tokens', array(
+		$base_url = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
+		$result   = wp_remote_post( $base_url . '/quickbooks/v4/payments/tokens', array(
 			'headers' => array(
 				'content-type' => 'application/json',
 			),
@@ -120,7 +105,6 @@ class Give_QuickBooks_API {
 
 		return $response_obj;
 	}
-
 
 	/**
 	 * QuickBooks Payment process request.
