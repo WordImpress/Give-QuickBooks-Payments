@@ -31,7 +31,7 @@ function give_qb_generate_unique_request_id() {
 /**
  * Get Client ID.
  *
- * @sice 1.0
+ * @since 1.0
  * @return mixed
  */
 function give_qb_get_client_id() {
@@ -43,7 +43,7 @@ function give_qb_get_client_id() {
 /**
  * Get Client Secret ID.
  *
- * @sice 1.0
+ * @since 1.0
  * @return mixed
  */
 function give_qb_get_client_secret_id() {
@@ -55,7 +55,7 @@ function give_qb_get_client_secret_id() {
 /**
  * Get oAuth access token.
  *
- * @sice 1.0
+ * @since 1.0
  * @return mixed
  */
 function give_qb_get_oauth_access_token() {
@@ -67,7 +67,7 @@ function give_qb_get_oauth_access_token() {
 /**
  * Get oAuth refresh token.
  *
- * @sice 1.0
+ * @since 1.0
  * @return mixed
  */
 function give_qb_get_oauth_refresh_token() {
@@ -79,7 +79,7 @@ function give_qb_get_oauth_refresh_token() {
 /**
  * Get oAuth refresh token.
  *
- * @sice 1.0
+ * @since 1.0
  * @return mixed
  */
 function give_qb_get_auth_code() {
@@ -88,6 +88,31 @@ function give_qb_get_auth_code() {
 	return $give_qb_auth_code;
 }
 
+/**
+ * Get Settings URL.
+ *
+ * @since 1.0
+ * @return mixed
+ */
+function give_qb_get_settings_url() {
+	// Return QuickBooks gateway setting page url.
+	return admin_url( 'edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=' . GIVE_QUICKBOOKS_SLUG );
+}
+
+/**
+ * Get authorization header information.
+ *
+ * @since  1.0
+ * @return string
+ */
+function give_qb_authorization_header() {
+	$client_id                        = give_qb_get_client_id();
+	$client_secret                    = give_qb_get_client_secret_id();
+	$encoded_client_id_client_secrets = base64_encode( $client_id . ':' . $client_secret );
+	$authorization_header             = 'Basic ' . $encoded_client_id_client_secrets;
+
+	return $authorization_header;
+}
 
 /**
  * Stripe uses it's own credit card form because the card details are tokenized.
