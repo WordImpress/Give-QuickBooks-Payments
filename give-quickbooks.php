@@ -246,6 +246,9 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			if ( ! defined( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT' ) ) {
 				define( 'GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT', 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer' );
 			}
+			if ( ! defined( 'GIVE_QUICKBOOKS_OAUTH_BASE_URL' ) ) {
+				define( 'GIVE_QUICKBOOKS_OAUTH_BASE_URL', 'https://appcenter.intuit.com/connect/oauth2' );
+			}
 		}
 
 		/**

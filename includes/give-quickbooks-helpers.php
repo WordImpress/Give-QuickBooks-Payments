@@ -6,12 +6,9 @@
  * @author WordImpress
  */
 
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-
 
 /**
  * Generate Random ID
@@ -19,17 +16,78 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 1.0
  * @return bool|string
  */
-function generate_unique_request_id() {
-	$guid = sprintf('%04x%04x-%04x-%03x4-%04x-%04x%04x%04x',
-		mt_rand(0, 65535), mt_rand(0, 65535),
-		mt_rand(0, 65535),
-		mt_rand(0, 4095),
-		bindec(substr_replace(sprintf('%016b', mt_rand(0, 65535)), '01', 6, 2)),
-		mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
+function give_qb_generate_unique_request_id() {
+	$guid = sprintf( '%04x%04x-%04x-%03x4-%04x-%04x%04x%04x',
+		mt_rand( 0, 65535 ), mt_rand( 0, 65535 ),
+		mt_rand( 0, 65535 ),
+		mt_rand( 0, 4095 ),
+		bindec( substr_replace( sprintf( '%016b', mt_rand( 0, 65535 ) ), '01', 6, 2 ) ),
+		mt_rand( 0, 65535 ), mt_rand( 0, 65535 ), mt_rand( 0, 65535 )
 	);
 
 	return $guid;
 }
+
+/**
+ * Get Client ID.
+ *
+ * @sice 1.0
+ * @return mixed
+ */
+function give_qb_get_client_id() {
+	$give_qb_client_id = give_get_option( 'give_quickbooks_client_id' );
+
+	return $give_qb_client_id;
+}
+
+/**
+ * Get Client Secret ID.
+ *
+ * @sice 1.0
+ * @return mixed
+ */
+function give_qb_get_client_secret_id() {
+	$give_qb_client_secret_id = give_get_option( 'give_quickbooks_client_secret' );
+
+	return $give_qb_client_secret_id;
+}
+
+/**
+ * Get oAuth access token.
+ *
+ * @sice 1.0
+ * @return mixed
+ */
+function give_qb_get_oauth_access_token() {
+	$give_qb_access_token = give_get_option( 'give_quickbooks_access_token' );
+
+	return $give_qb_access_token;
+}
+
+/**
+ * Get oAuth refresh token.
+ *
+ * @sice 1.0
+ * @return mixed
+ */
+function give_qb_get_oauth_refresh_token() {
+	$give_qb_refresh_token = give_get_option( 'give_quickbooks_refresh_token' );
+
+	return $give_qb_refresh_token;
+}
+
+/**
+ * Get oAuth refresh token.
+ *
+ * @sice 1.0
+ * @return mixed
+ */
+function give_qb_get_auth_code() {
+	$give_qb_auth_code = give_get_option( 'give_quickbooks_auth_code' );
+
+	return $give_qb_auth_code;
+}
+
 
 /**
  * Stripe uses it's own credit card form because the card details are tokenized.

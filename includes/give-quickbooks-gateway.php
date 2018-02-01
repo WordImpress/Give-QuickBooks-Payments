@@ -51,7 +51,12 @@ class Give_QuickBooks_Gateway {
 
 	public function looking_for_access_token(){
 
-		$code = give_get_option('give_quickbooks_auth_code');
+		$code = give_qb_get_auth_code();
+
+		// Bail out if QuickBooks Auth Code empty.
+		if ( empty( $code ) ) {
+			return false;
+		}
 
 		$result = $this->getAccessToken( GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT, $code, 'authorization_code' );
 
@@ -171,7 +176,6 @@ class Give_QuickBooks_Gateway {
 			),
 		) );
 
-
 		return $result;
 	}
 
@@ -184,8 +188,8 @@ class Give_QuickBooks_Gateway {
 	 * @return string
 	 */
 	public static function generate_authorization_header() {
-		$client_id                        = give_get_option( 'give_quickbooks_client_id' );
-		$client_secret                    = give_get_option( 'give_quickbooks_client_secret' );
+		$client_id                        = give_qb_get_client_id();
+		$client_secret                    = give_qb_get_client_secret_id();
 		$encoded_client_id_client_secrets = base64_encode( $client_id . ':' . $client_secret );
 		$authorization_header             = 'Basic ' . $encoded_client_id_client_secrets;
 
@@ -318,56 +322,6 @@ class Give_QuickBooks_Gateway {
 	}
 
 	/**
-	 * Check whether we're connected with QuickBooks app or not.
-	 *
-	 * @access  protected
-	 * @since   1.0.0
-	 *
-	 * @return  bool|true     if access_token is available.
-	 *          bool|false    if access_token is not available.
-	 */
-	protected function is_connected() {
-
-		// Check whether there is action token is available or not.
-		if ( isset( $auth_data['access_token'] ) && ! empty( $auth_data['access_token'] ) ) {
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Get QuickBooks oAuth data.
-	 *
-	 * @access  public
-	 * @since   1.0.0
-	 *
-	 * @return  array $gateway_data Get Quickbooks authentication data.
-	 */
-	public static function get_quickbooks_auth_data() {
-
-		// Retrieve QuickBooks authentication setting data.
-		$gateway_data = give_get_option( 'give_quickbooks_settings' );
-
-		return $gateway_data;
-	}
-
-	/**
-	 * Get disconnect URL.
-	 *
-	 * @since   1.0.0
-	 * @access  public
-	 *
-	 * @return  string Disconnect authentication URL with QuickBooks API.
-	 */
-	public function get_disconnect_url() {
-		return add_query_arg( array(
-			'give_quickbooks_disconnect'       => 'true',
-			'give_quickbooks_disconnect_nonce' => wp_create_nonce( 'give_disconnect_quickbooks' ),
-		), $this->get_setting_url() );
-	}
-
-	/**
 	 * Get setting URL.
 	 *
 	 * @since   1.0.0
@@ -382,18 +336,6 @@ class Give_QuickBooks_Gateway {
 	}
 
 	/**
-	 * Generate oAuth Connection URL.
-	 *
-	 * @since   1.0.0
-	 * @access  public
-	 *
-	 * @return  string  authentication URL with QuickBooks.
-	 */
-	public function generate_connection_url() {
-		return $this->get_connect_url();
-	}
-
-	/**
 	 * Generate Authentication with QuickBooks dynamically.
 	 *
 	 * @since   1.0.0
@@ -404,20 +346,17 @@ class Give_QuickBooks_Gateway {
 	 * @return  string  return complete authentication url with urls.
 	 */
 	public function get_connect_url( $args = array() ) {
-
-
 		// Create argument list.
 		$args = wp_parse_args( $args, array(
 			'redirect_uri'          => $this->get_setting_url(),
-			'client_id'             => give_get_option( 'give_quickbooks_client_id' ),
+			'client_id'             => give_qb_get_client_id(),
 			'scope'                 => 'com.intuit.quickbooks.payment',
 			'give_quickbooks_nonce' => wp_create_nonce( 'give_quickbooks_nonce' ),
 			'response_type'         => 'code',
 			'state'                 => 'RandomState',
 		) );
 
-		$authorizationRequestUrl = 'https://appcenter.intuit.com/connect/oauth2';
-		$authorizationRequestUrl .= '?' . http_build_query( $args, null, '&', PHP_QUERY_RFC1738 );
+		$authorizationRequestUrl = GIVE_QUICKBOOKS_OAUTH_BASE_URL . '?' . http_build_query( $args, null, '&', PHP_QUERY_RFC1738 );
 
 		return $authorizationRequestUrl;
 	}

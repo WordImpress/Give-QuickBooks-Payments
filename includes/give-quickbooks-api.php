@@ -89,14 +89,14 @@ class Give_QuickBooks_API {
 		);
 
 		$data = wp_json_encode( $request_data );
-		$access_token =  give_get_option('give_quickbooks_access_token');
+		$access_token =  give_qb_get_oauth_access_token();
 
 		$authorization = 'Bearer ' . $access_token;
 
 		$result = wp_remote_post( 'https://sandbox.api.intuit.com/quickbooks/v4/payments/charges', array(
 			'headers' => array(
 				'content-type' => 'application/json',
-				'Request-Id' => generate_unique_request_id(),
+				'Request-Id' => give_qb_generate_unique_request_id(),
 				'Authorization' => $authorization,
 			),
 			'body'    => $data,
