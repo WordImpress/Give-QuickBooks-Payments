@@ -30,8 +30,10 @@ class Give_QuickBooks_Gateway {
 	 */
 	public function __construct() {
 
-		$this->get_access_token();
+		// Get access token initially when connect oAuth and click on 'Connect to QuickBooks Button'.
+		$this->get_access_token_from_auth_code();
 
+		// Looking for access token if access token expires and get new 'access_token' from the 'refresh_token'
 		$this->looking_for_access_token();
 
 		// Registering QuickBooks Payment gateway with give.
@@ -45,12 +47,32 @@ class Give_QuickBooks_Gateway {
 		add_action( 'give_admin_field_quickbooks_auth_button', array( $this, 'quickbooks_auth_button_callback' ), 10, 2 );
 
 		// Process Payment.
-		add_action( 'give_gateway_'.GIVE_QUICKBOOKS_SLUG, array( $this, 'process_payment' ) );
+		add_action( 'give_gateway_' . GIVE_QUICKBOOKS_SLUG, array( $this, 'process_payment' ) );
 	}
 
 
-	public function looking_for_access_token(){
+	/**
+	 * Looking for access token every time to check if expired.
+	 *
+	 * Check if current access token expires? If yes then recall api using refresh_token.
+	 * 'access_token' expires every 1 hour (3600s).
+	 *
+	 * @since 1.0
+	 * @return bool
+	 */
+	public function looking_for_access_token() {
 
+		// Bail out if get Code in redirect URL.
+		if ( ! empty( $_GET['code'] ) ) {
+			return false;
+		}
+
+		// Bail out if get realmId in redirect URL.
+		if ( ! empty( $_GET['realmId'] ) ) {
+			return false;
+		}
+
+		// Get Auth code from db.
 		$code = give_qb_get_auth_code();
 
 		// Bail out if QuickBooks Auth Code empty.
@@ -61,11 +83,10 @@ class Give_QuickBooks_Gateway {
 		$result = Give_QuickBooks_API::get_auth_access_token( $code, 'authorization_code' );
 
 		// Check the response code
-		$response_code    = wp_remote_retrieve_response_code( $result );
-		$response_body    = wp_remote_retrieve_body( $result );
-		$response_obj     = json_decode( $response_body );
+		$response_code = wp_remote_retrieve_response_code( $result );
 
-		if ( 401 === $response_code || 400 === $response_code ) {
+		// Request for new access token if current access_token expires and get status '401'.
+		if ( 401 === $response_code ) {
 			$refresh_token_obj = Give_QuickBooks_API::get_auth_refresh_access_token();
 
 			$refresh_token = $refresh_token_obj->refresh_token;
@@ -77,40 +98,46 @@ class Give_QuickBooks_Gateway {
 
 	}
 
-	public function get_access_token() {
+	/**
+	 * Get access token from auth code.
+	 *
+	 * Here we exchange auth_code and get new oAuth 'access_token'.
+	 * Which we will use for the Payment process.
+	 *
+	 * @since 1.0
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 */
+	public function get_access_token_from_auth_code() {
+
+		// Bail out, if not getting auth `code` from the request param.
 		if ( empty( $_GET['code'] ) ) {
 			return false;
 		}
 
+		// Bail out, if not getting auth `realmId` from the request param.
 		if ( empty( $_GET['realmId'] ) ) {
 			return false;
 		}
 
 		$responseState = ! empty( $_GET['state'] ) ? give_clean( $_GET['state'] ) : 'RandomState';
-		$realmId = ! empty( $_GET['realmId'] ) ? give_clean( $_GET['realmId'] ) : '';
 		if ( strcmp( 'RandomState', $responseState ) != 0 ) {
 			throw new Exception( "The state is not correct from Intuit Server. Consider your app is hacked." );
 		}
+
+		$realmId = ! empty( $_GET['realmId'] ) ? give_clean( $_GET['realmId'] ) : '';
+		give_update_option( 'give_quickbooks_realm_id', $realmId );
 
 		// Get Authorization Code.
 		$code = ! empty( $_GET['code'] ) ? give_clean( $_GET['code'] ) : 0;
 		give_update_option( 'give_quickbooks_auth_code', $code );
-		$responseState = $_GET['state'];
-
-		if ( strcmp( 'RandomState', $responseState ) != 0 ) {
-			throw new Exception( "The state is not correct from Intuit Server. Consider your app is hacked." );
-		}
 
 		$result = Give_QuickBooks_API::get_auth_access_token( $code, 'authorization_code' );
 
 		// Check the response code
-		$response_code    = wp_remote_retrieve_response_code( $result );
-		$response_body    = wp_remote_retrieve_body( $result );
-		$response_obj     = json_decode( $response_body );
-
-		if ( 400 === $response_code ) {
-			$this->get_qb_connect_url();
-		}
+		$response_body = wp_remote_retrieve_body( $result );
+		$response_obj  = json_decode( $response_body );
 
 		$refresh_token = $response_obj->refresh_token;
 		$access_token  = $response_obj->access_token;
@@ -341,7 +368,7 @@ class Give_QuickBooks_Gateway {
 	protected static function get_success_page( $payment_id ) {
 
 		$success_redirect = add_query_arg( array(
-			'payment_id'              => $payment_id,
+			'payment_id' => $payment_id,
 		), get_permalink( give_get_option( 'success_page' ) ) );
 
 		return $success_redirect;
