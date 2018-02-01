@@ -30,7 +30,9 @@ class Give_QuickBooks_Gateway {
 	 */
 	public function __construct() {
 
-		$this->look_for_access_token();
+		$this->get_access_token();
+
+		$this->looking_for_access_token();
 
 		// Registering QuickBooks Payment gateway with give.
 		add_filter( 'give_payment_gateways', array( $this, 'register_gateway' ) );
