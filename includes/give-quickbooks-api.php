@@ -16,16 +16,10 @@ class Give_QuickBooks_API {
 	 * @since 1.0
 	 *
 	 * @param $code
-	 * @param $grant_type
 	 *
 	 * @return array|bool|\WP_Error
 	 */
-	public static function get_auth_access_token( $code, $grant_type ) {
-
-		// Bail out, if Grant type is not set.
-		if ( ! isset( $grant_type ) ) {
-			return false;
-		}
+	public static function get_auth_access_token( $code ) {
 
 		// Get Authorization Header.
 		$authorization_header_info = give_qb_authorization_header();
@@ -36,7 +30,7 @@ class Give_QuickBooks_API {
 				'Content-Type'  => 'application/x-www-form-urlencoded',
 			),
 			'body'    => array(
-				'grant_type'   => $grant_type,
+				'grant_type'   => 'authorization_code',
 				'code'         => $code,
 				'redirect_uri' => give_qb_get_settings_url(),
 			),
@@ -86,7 +80,7 @@ class Give_QuickBooks_API {
 			'expYear'  => $payment_data['post_data']['card-expiry-year'],
 			'expMonth' => $card_expiry_month,
 			'cvc'      => $payment_data['post_data']['card_cvc'],
-			'number'   => $payment_data['post_data']['card_number'],
+			'number'   => $payment_data['card_info']['card_number'],
 			'name'     => $payment_data['post_data']['card_name'],
 		);
 
@@ -99,6 +93,13 @@ class Give_QuickBooks_API {
 			),
 			'body'    => $data,
 		) );
+
+		if ( isset( $result->errors['http_request_failed'][0] ) ) {
+			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $result->errors['http_request_failed'][0] );
+			give_set_error( 'request_error', $result->errors['http_request_failed'][0] );
+			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+			exit;
+		}
 
 		$response_body = wp_remote_retrieve_body( $result );
 		$response_obj  = json_decode( $response_body );
@@ -116,24 +117,27 @@ class Give_QuickBooks_API {
 	 * @return bool
 	 */
 	public static function looking_for_access_token() {
-
-		// Get Auth code from db.
-		$code = give_qb_get_auth_code();
-
-		// Bail out if QuickBooks Auth Code empty.
-		if ( empty( $code ) ) {
-			return false;
-		}
-
 		// Request for new access token if current access_token expires and get status '401'.
 		$refresh_token_obj = self::get_auth_refresh_access_token();
 
-		$refresh_token = $refresh_token_obj->refresh_token;
-		$access_token  = $refresh_token_obj->access_token;
+		$response_body        = wp_remote_retrieve_body( (array) $refresh_token_obj );
+		$refresh_token_object = json_decode( $response_body );
 
-		give_update_option( 'give_quickbooks_access_token', $access_token );
-		give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
+		if ( isset( $refresh_token_object ) ) {
 
+			if ( 'invalid_grant' != $refresh_token_object->error ) {
+				$refresh_token = $refresh_token_object->refresh_token;
+				$access_token  = $refresh_token_object->access_token;
+
+				give_update_option( 'give_quickbooks_access_token', $access_token );
+				give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
+
+				$current_time               = current_time( 'timestamp' );
+				$x_refresh_token_expires_in = $refresh_token_object->x_refresh_token_expires_in;
+				give_update_option( 'qb_auth_connected_time', $current_time + 3600 );
+				give_update_option( 'qb_auth_x_refresh_token_expires_in', $x_refresh_token_expires_in );
+			}
+		}
 	}
 
 	/**
@@ -168,11 +172,12 @@ class Give_QuickBooks_API {
 			),
 		);
 
-		$data         = wp_json_encode( $request_data );
-		$access_token = give_qb_get_oauth_access_token();
+		$data = wp_json_encode( $request_data );
 
-		$authorization = 'Bearer ' . $access_token;
-		$base_url      = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
+		// Get auth generated access_token.
+		$auth_access_token = give_qb_get_oauth_access_token();
+		$authorization     = 'Bearer ' . $auth_access_token;
+		$base_url          = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
 
 		$result = wp_remote_post( $base_url . '/quickbooks/v4/payments/charges', array(
 			'headers' => array(
@@ -183,17 +188,8 @@ class Give_QuickBooks_API {
 			'body'    => $data,
 		) );
 
-
 		$response_body = wp_remote_retrieve_body( $result );
 		$response_obj  = json_decode( $response_body );
-
-		if ( ! isset( $response_obj ) ) {
-
-			if ( 401 === $result['response']['code'] ) {
-				self::looking_for_access_token();
-				self::quickbooks_payment_request( $payment_data, $access_token );
-			}
-		}
 
 		return $response_obj;
 	}
