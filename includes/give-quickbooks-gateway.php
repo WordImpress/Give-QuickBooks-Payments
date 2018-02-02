@@ -29,12 +29,10 @@ class Give_QuickBooks_Gateway {
 	 * @since   1.0.0
 	 */
 	public function __construct() {
-
 		// Get access token initially when connect oAuth and click on 'Connect to QuickBooks Button'.
 		$this->get_access_token_from_auth_code();
 
-		// Looking for access token if access token expires and get new 'access_token' from the 'refresh_token'
-		//$this->looking_for_access_token();
+		$this->check_access_token_expires();
 
 		// Registering QuickBooks Payment gateway with give.
 		add_filter( 'give_payment_gateways', array( $this, 'register_gateway' ) );
@@ -48,6 +46,27 @@ class Give_QuickBooks_Gateway {
 
 		// Process Payment.
 		add_action( 'give_gateway_' . GIVE_QUICKBOOKS_SLUG, array( $this, 'process_payment' ) );
+	}
+
+	/**
+	 * Check whether access_token expires.
+	 *
+	 * @since 1.0
+	 */
+	public function check_access_token_expires(){
+
+		$current_time = current_time('timestamp');
+
+		$qb_auth_connected_time = give_get_option('qb_auth_connected_time');
+
+		// Reduce 15min.
+		$qb_auth_connected_time = $qb_auth_connected_time - 900;
+
+		// Compare with current time and if less then call for access_token.
+		if ( $current_time < $qb_auth_connected_time ) {
+			Give_QuickBooks_API::looking_for_access_token();
+		}
+
 	}
 
 	/**
@@ -85,17 +104,25 @@ class Give_QuickBooks_Gateway {
 		$code = ! empty( $_GET['code'] ) ? give_clean( $_GET['code'] ) : 0;
 		give_update_option( 'give_quickbooks_auth_code', $code );
 
-		$result = Give_QuickBooks_API::get_auth_access_token( $code, 'authorization_code' );
+		$result = Give_QuickBooks_API::get_auth_access_token( $code );
 
 		// Check the response code
 		$response_body = wp_remote_retrieve_body( $result );
+		$response_code = wp_remote_retrieve_response_code( $result );
 		$response_obj  = json_decode( $response_body );
 
-		$refresh_token = $response_obj->refresh_token;
-		$access_token  = $response_obj->access_token;
+		if ( 200 === $response_code ) {
+			$refresh_token = $response_obj->refresh_token;
+			$access_token  = $response_obj->access_token;
 
-		give_update_option( 'give_quickbooks_access_token', $access_token );
-		give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
+			give_update_option( 'give_quickbooks_access_token', $access_token );
+			give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
+
+			$current_time = current_time('timestamp');
+			$x_refresh_token_expires_in = $response_obj->x_refresh_token_expires_in;
+			give_update_option('qb_auth_connected_time',$current_time);
+			give_update_option('qb_auth_x_refresh_token_expires_in',$x_refresh_token_expires_in);
+		}
 
 		if ( ! empty( $realmId ) ) {
 			wp_redirect( give_qb_get_settings_url() );
@@ -303,6 +330,7 @@ class Give_QuickBooks_Gateway {
 
 		// Set the payment transaction ID.
 		give_set_payment_transaction_id( $payment_id, $payment_process_response->id );
+		give_update_payment_meta( $payment_id, 'authCode', $payment_process_response->authCode );
 
 		switch ( $payment_process_response->status ) {
 			case ( 'CAPTURED' ):
