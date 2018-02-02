@@ -94,9 +94,10 @@ class Give_QuickBooks_API {
 			'body'    => $data,
 		) );
 
-		if ( isset( $result->errors['http_request_failed'][0] ) ) {
-			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $result->errors['http_request_failed'][0] );
-			give_set_error( 'request_error', $result->errors['http_request_failed'][0] );
+		$error = isset( $result->errors['http_request_failed'][0] ) ? $result->errors['http_request_failed'][0] : '';
+		if ( isset( $error ) && ! empty( $error ) ) {
+			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $error );
+			give_set_error( 'request_error', $error );
 			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
 			exit;
 		}
@@ -124,8 +125,9 @@ class Give_QuickBooks_API {
 		$refresh_token_object = json_decode( $response_body );
 
 		if ( isset( $refresh_token_object ) ) {
+			$error = isset( $refresh_token_object->error ) ? $refresh_token_object->error : '';
 
-			if ( 'invalid_grant' != $refresh_token_object->error ) {
+			if ( 'invalid_grant' != $error ) {
 				$refresh_token = $refresh_token_object->refresh_token;
 				$access_token  = $refresh_token_object->access_token;
 

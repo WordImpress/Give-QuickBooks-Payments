@@ -46,6 +46,9 @@ class Give_QuickBooks_Gateway {
 
 		// Process Payment.
 		add_action( 'give_gateway_' . GIVE_QUICKBOOKS_SLUG, array( $this, 'process_payment' ) );
+
+		// Call admin notice
+		add_action( 'admin_notices', array( $this, 'quickbooks_render_admin_notice' ) );
 	}
 
 	/**
@@ -53,11 +56,11 @@ class Give_QuickBooks_Gateway {
 	 *
 	 * @since 1.0
 	 */
-	public function check_access_token_expires(){
+	public function check_access_token_expires() {
 
-		$current_time = current_time('timestamp');
+		$current_time = current_time( 'timestamp' );
 
-		$qb_auth_connected_time = give_get_option('qb_auth_connected_time');
+		$qb_auth_connected_time = give_get_option( 'qb_auth_connected_time' );
 
 		// Reduce 15min.
 		$qb_auth_connected_time = $qb_auth_connected_time - 900;
@@ -118,14 +121,14 @@ class Give_QuickBooks_Gateway {
 			give_update_option( 'give_quickbooks_access_token', $access_token );
 			give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
 
-			$current_time = current_time('timestamp');
+			$current_time               = current_time( 'timestamp' );
 			$x_refresh_token_expires_in = $response_obj->x_refresh_token_expires_in;
-			give_update_option('qb_auth_connected_time',$current_time);
-			give_update_option('qb_auth_x_refresh_token_expires_in',$x_refresh_token_expires_in);
+			give_update_option( 'qb_auth_connected_time', $current_time + 3600 );
+			give_update_option( 'qb_auth_x_refresh_token_expires_in', $x_refresh_token_expires_in );
 		}
 
 		if ( ! empty( $realmId ) ) {
-			wp_redirect( give_qb_get_settings_url() );
+			wp_redirect( add_query_arg( 'give-message', 'qb-auth-connected', give_qb_get_settings_url() ) );
 			exit;
 		}
 
@@ -229,6 +232,31 @@ class Give_QuickBooks_Gateway {
 	}
 
 	/**
+	 * Render admin notice.
+	 *
+	 * @since   1.0.0
+	 * @access  public
+	 */
+	public function quickbooks_render_admin_notice() {
+
+		if ( ! empty( $_GET['give-message'] ) ) {
+			// Give settings notices and errors.
+			if ( current_user_can( 'manage_give_settings' ) ) {
+				switch ( $_GET['give-message'] ) {
+					case 'qb-auth-connected' :
+						Give()->notices->register_notice( array(
+							'id'          => 'qb-auth-connected',
+							'type'        => 'updated',
+							'description' => __( 'You have successfully authenticated with QuickBooks.', 'give-quickbooks-payments' ),
+							'show'        => true,
+						) );
+						break;
+				}
+			}
+		}
+	}
+
+	/**
 	 * It register QuickBooks auth button by using GiveWP Setting API.
 	 * Setting API.
 	 *
@@ -241,17 +269,27 @@ class Give_QuickBooks_Gateway {
 	 * @return  false               if not connected.
 	 */
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
+
+		$client_id = give_qb_get_client_id();
+		$auth_code = give_qb_get_auth_code();
 		?>
 		<tr valign="top" <?php echo ! empty( $value['wrapper_class'] ) ? 'class="' . $value['wrapper_class'] . '"' : '' ?>>
 			<th scope="row" class="titledesc">
 				<label for=""><?php echo Give_Admin_Settings::get_field_title( $value ); ?></label>
 			</th>
-			<td class="gocardless-auth" colspan="2">
+			<td class="qb-auth" colspan="2">
 				<a class="connect-quickbooks-button"
 				   href="<?php echo $this->get_qb_connect_url(); ?>">
-					<img width="225px" src="<?php echo GIVE_QUICKBOOKS_PLUGIN_URL . 'assets/images/C2QB_green_btn_lg_default.png' ?>">
+					<img width="225px" src="<?php echo GIVE_QUICKBOOKS_PLUGIN_URL . 'assets/images/qb_connect_bg.png' ?>">
 				</a>
 			</td>
+
+			<?php if ( empty( $client_id ) && empty( $auth_code ) ): ?>
+				<td class="qb-auth-status-wrap" colspan="2">
+					<strong class="qb-auth-status-label"><?php _e( 'Status: ', 'give-quickbooks-payments' ); ?></strong>
+					<span class="qb-auth-status" style="font-style: italic; float:left;"><?php _e( 'Not Connected', 'give-quickbooks-payments' ); ?></span>
+				</td>
+			<?php endif; ?>
 		</tr>
 		<?php
 	}
