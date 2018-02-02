@@ -118,9 +118,17 @@ function give_qb_authorization_header() {
  * Handle Error message.
  *
  * @since 1.0
+ *
  * @param $parsed_resp
  */
 function give_qb_handle_error( $parsed_resp ) {
+
+	if ( ! isset( $parsed_resp ) ) {
+		$message = __( 'Authentication Fail', 'give-quickbooks-payments' );
+		give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $message );
+		give_set_error( 'request_error', $message );
+		give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+	}
 
 	if ( ! empty( $parsed_resp->errors ) ) {
 
