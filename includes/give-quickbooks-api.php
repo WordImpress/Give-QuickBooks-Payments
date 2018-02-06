@@ -148,18 +148,16 @@ class Give_QuickBooks_API {
 	 * @since 1.0
 	 *
 	 * @param array  $payment_data
-	 * @param string $access_token
 	 *
 	 * @return object
 	 */
-	public static function quickbooks_payment_request( $payment_data, $access_token ) {
+	public static function quickbooks_payment_request( $payment_data ) {
 
 		$card_expiry       = explode( '/', $payment_data['post_data']['card_expiry'] );
 		$card_expiry_month = trim( $card_expiry[0] );
 
 		$request_data = array(
 			'amount'   => $payment_data['price'],
-			'token'    => $access_token,
 			'currency' => give_get_currency(),
 			'context'  => array(
 				'mobile'      => false,

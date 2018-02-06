@@ -336,17 +336,8 @@ class Give_QuickBooks_Gateway {
 		// Validate the gateway_nonce.
 		give_validate_nonce( $payment_data['gateway_nonce'], 'give-gateway' );
 
-		// Get access token from customer cc data.
-		$access_token_result = Give_QuickBooks_API::get_access_token( $payment_data );
-
-		// Check is any error?
-		give_qb_handle_error( $access_token_result );
-
-		// This access token expiry in 15 min.
-		$access_token = $access_token_result->value;
-
 		// Process Payment.
-		$payment_process_response = Give_QuickBooks_API::quickbooks_payment_request( $payment_data, $access_token );
+		$payment_process_response = Give_QuickBooks_API::quickbooks_payment_request( $payment_data );
 
 		// Check any error?
 		give_qb_handle_error( $payment_process_response );
@@ -368,7 +359,7 @@ class Give_QuickBooks_Gateway {
 
 		// Set the payment transaction ID.
 		give_set_payment_transaction_id( $payment_id, $payment_process_response->id );
-		give_update_payment_meta( $payment_id, 'authCode', $payment_process_response->authCode );
+		give_update_payment_meta( $payment_id, '_give_qb_auth_code', $payment_process_response->authCode );
 
 		switch ( $payment_process_response->status ) {
 			case ( 'CAPTURED' ):
