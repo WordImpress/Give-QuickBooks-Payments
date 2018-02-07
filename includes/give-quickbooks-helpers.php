@@ -278,3 +278,68 @@ function give_quickbooks_credit_card_form( $form_id, $echo = true ) {
 }
 
 add_action( 'give_quickbooks_cc_form', 'give_quickbooks_credit_card_form' );
+
+/**
+ * Add schedule of 30 min.
+ *
+ * @since 1.0
+ *
+ * @param $schedules
+ *
+ * @return mixed
+ */
+function give_qb_add_schedule( $schedules ) {
+	$schedules['thirty_minute'] = array(
+		'interval' => 1800,
+		'display'  => esc_html__( 'Every Thirty Minute' ),
+	);
+
+	return $schedules;
+}
+
+// Add schedule cron time.
+add_filter( 'cron_schedules', 'give_qb_add_schedule', 10, 1 );
+
+/**
+ * Run schedule event hook.
+ *
+ * @since 1.0
+ */
+function give_quickbooks_schedule_event() {
+	// Make sure this event hasn't been scheduled
+	if ( ! wp_next_scheduled( 'give_qb_check_access_token_expires' ) ) {
+		// Schedule the event
+		wp_schedule_event( time(), 'thirty_minute', 'give_qb_check_access_token_expires' );
+	}
+}
+
+// Run scheduling event.
+add_action( 'init', 'give_quickbooks_schedule_event' );
+
+
+/**
+ * Check whether access_token expires.
+ *
+ * @since 1.0
+ */
+function give_qb_check_access_token_expires() {
+
+	$current_time = current_time( 'timestamp' );
+
+	$qb_auth_connected_time = give_get_option( 'qb_auth_connected_time' );
+
+	// Reduce 30min.
+	$qb_auth_connected_time = $qb_auth_connected_time - 1800;
+
+	wp_mail( 'jaydeep.rami@multidots.in','$qb_auth_connected_time', $qb_auth_connected_time);
+	wp_mail( 'jaydeep.rami@multidots.in','$current_time', $current_time);
+
+	// Compare with current time and if less then call for access_token.
+	if ( $current_time < $qb_auth_connected_time ) {
+		wp_mail( 'jaydeep.rami@multidots.in','test', 'run');
+
+		Give_QuickBooks_API::looking_for_access_token();
+	}
+}
+
+add_action( 'give_qb_check_access_token_expires', 'give_qb_check_access_token_expires' );
