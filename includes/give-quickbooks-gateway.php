@@ -38,6 +38,9 @@ class Give_QuickBooks_Gateway {
 		// Process Payment.
 		add_action( 'give_gateway_' . GIVE_QUICKBOOKS_SLUG, array( $this, 'process_payment' ) );
 
+		// Register hooks for QuickBooks refund.
+		add_action( 'give_update_payment_status', array( $this, 'process_refund' ), 200, 3 );
+
 	}
 
 	/**
@@ -214,6 +217,106 @@ class Give_QuickBooks_Gateway {
 
 		// Record the pending payment.
 		return give_insert_payment( $insert_payment_data );
+	}
+
+	/**
+	 * QuickBooks refund process.
+	 *
+	 * @access  public
+	 * @since   1.0.0
+	 *
+	 * @param   int    $payment_id Donation payment id.
+	 * @param   string $new_status New payment status.
+	 * @param   string $old_status Old payment status.
+	 *
+	 * @return  bool|WP_Error
+	 */
+	public function process_refund( $payment_id, $new_status, $old_status ) {
+
+		// Only move forward if refund requested.
+		if ( empty( $_POST['give_refund_in_quickbooks'] ) ) {
+			return false;
+		}
+
+		// Get all posted data.
+		$payment_data = $_POST;
+
+		if ( 'refunded' != $new_status || ! isset( $payment_data ) ) {
+			return false;
+		}
+
+		// Get QuickBooks payment id.
+		$charge_id = give_get_payment_transaction_id( $payment_id );
+
+		// If no charge ID, look in the payment notes.
+		if ( empty( $charge_id ) ) {
+			return new WP_Error( 'missing_payment', sprintf( __( 'Unable to refund order #%s. Order does not have payment ID. Make sure payment has been created.', 'give-quickbooks-payments' ), $payment_id ) );
+		}
+
+		// Create refund on QuickBooks.
+		$parsed_resp = Give_QuickBooks_API::create_refund( $charge_id, $payment_data );
+
+		if ( ! isset( $parsed_resp ) ) {
+			$message = __( 'Authentication Fail', 'give-quickbooks-payments' );
+			give_insert_payment_note( $payment_id, sprintf( __( 'Unable to refund via QuickBooks: %s', 'give-quickbooks-payments' ), $message ) );
+			// Change it to previous status.
+			give_update_payment_status( $payment_id, $old_status );
+
+			return false;
+		}
+
+		if ( ! empty( $parsed_resp->errors ) ) {
+
+			$message = '';
+			$errors  = array();
+			foreach ( $parsed_resp->errors as $err ) {
+				$err_item = '';
+
+				if ( ! empty( $err->code ) ) {
+					$err_item .= $err->code . ': ';
+				}
+
+				if ( ! empty( $err->message ) ) {
+					$err_item .= ucfirst( $err->message ) . ' ';
+				}
+
+				if ( ! empty( $err->moreInfo ) ) {
+					$err_item .= $err->moreInfo;
+				}
+
+				$errors[] = $err_item;
+			}
+
+			if ( ! empty( $errors ) ) {
+				$message .= implode( ', ', $errors );
+			}
+
+			give_insert_payment_note( $payment_id, sprintf( __( 'Unable to refund via QuickBooks: %s', 'give-quickbooks-payments' ), $message ) );
+
+			// Change it to previous status.
+			give_update_payment_status( $payment_id, $old_status );
+
+			return false;
+		}
+
+		if ( empty( $parsed_resp->id ) ) {
+			give_insert_payment_note( $payment_id, __( 'Unable to refund via QuickBooks. QuickBooks returns unexpected refund response.', 'give-quickbooks-payments' ) );
+
+			return false;
+		}
+
+		if ( isset( $parsed_resp->status ) && 'ISSUED' === $parsed_resp->status ) {
+
+			// Add refund id into payment.
+			give_update_meta( $payment_id, '_give_quickbooks_refunded_id', $parsed_resp->id );
+
+			// Insert note about refund.
+			give_insert_payment_note( $payment_id, __( 'Refund successfully completed. Refund ID:'. $parsed_resp->id, 'give-quickbooks-payments' ) );
+
+		}
+
+
+		return true;
 	}
 
 }

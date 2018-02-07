@@ -204,8 +204,6 @@ class Give_QuickBooks_API {
 			'body'    => $data,
 		) );
 
-		wp_mail('jaydeep.ratest@test.com','tests',$authorization);
-
 		$error = isset( $result->errors['http_request_failed'][0] ) ? $result->errors['http_request_failed'][0] : '';
 		if ( isset( $error ) && ! empty( $error ) ) {
 			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $error );
@@ -213,6 +211,49 @@ class Give_QuickBooks_API {
 			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
 			exit;
 		}
+
+		$response_body = wp_remote_retrieve_body( $result );
+		$response_obj  = json_decode( $response_body );
+
+		return $response_obj;
+	}
+
+	/**
+	 * Processed Refund.
+	 *
+	 * @since 1.0
+	 *
+	 * @param $charge_id
+	 * @param array $payment_data
+	 *
+	 * @return array|bool|mixed|object
+	 */
+	public static function create_refund( $charge_id, $payment_data ) {
+
+		// Bail out, if charge_id not set.
+		if ( empty( $charge_id ) ) {
+			return false;
+		}
+
+		$auth_access_token = give_qb_get_oauth_access_token();
+		$authorization     = 'Bearer ' . $auth_access_token;
+		$base_url          = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
+
+		$request_data = array(
+			'id'   => $charge_id,
+			'amount'   => $payment_data['give-payment-total'],
+		);
+
+		$data = wp_json_encode( $request_data );
+
+		$result = wp_remote_post( $base_url . '/quickbooks/v4/payments/charges/' . $charge_id . '/refunds', array(
+			'headers' => array(
+				'content-type'  => 'application/json',
+				'Request-Id'    => give_qb_generate_unique_request_id(),
+				'Authorization' => $authorization,
+			),
+			'body'    => $data,
+		) );
 
 		$response_body = wp_remote_retrieve_body( $result );
 		$response_obj  = json_decode( $response_body );
