@@ -40,6 +40,9 @@ class Give_QuickBooks_Admin {
 		// Call admin notice.
 		add_action( 'admin_notices', array( $this, 'quickbooks_render_admin_notice' ) );
 
+		// Add custom js on payment details page.
+		add_action( 'give_view_order_details_before', array( $this, 'admin_payment_js' ), 100, 1 );
+
 	}
 
 	/**
@@ -133,7 +136,18 @@ class Give_QuickBooks_Admin {
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
 
 		$client_id = give_qb_get_client_id();
-		$auth_code = give_qb_get_auth_code();
+		$refresh_token = give_qb_get_oauth_refresh_token();
+		$connected = false;
+
+	/*	if ( ! empty( $refresh_token ) ) {
+			$result = Give_QuickBooks_API::get_auth_refresh_access_token();
+
+			// Check the response code
+			$response_body = wp_remote_retrieve_body( (array) $result );
+			$response_code = wp_remote_retrieve_response_code( (array) $result );
+			$response_obj  = json_decode( $response_body );
+		}*/
+
 		?>
 		<tr valign="top" <?php echo ! empty( $value['wrapper_class'] ) ? 'class="' . $value['wrapper_class'] . '"' : '' ?>>
 			<th scope="row" class="titledesc">
@@ -205,6 +219,36 @@ class Give_QuickBooks_Admin {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Add the input field when change the payment status drop-down on payment details page
+	 *
+	 * @since  1.0.0
+	 * @access public
+	 *
+	 * @param int $payment_id
+	 */
+	public function admin_payment_js( $payment_id = 0 ) {
+
+		if ( GIVE_QUICKBOOKS_SLUG !== give_get_payment_gateway( $payment_id ) ) {
+			return;
+		}
+		?>
+		<script type="text/javascript">
+					jQuery( document ).ready( function( $ ) {
+						$( 'select[name=give-payment-status]' ).change( function() {
+							$( '.give-quickbooks-refund' ).remove();
+							$( '#give_cancellation_in_quickbooks' ).remove();
+							if ( 'refunded' === $( this ).val() ) {
+								$( this ).parent().parent().append( '<p class="give-quickbooks-refund"><input type="checkbox" id="give_refund_in_quickbooks" name="give_refund_in_quickbooks" value="1"/><label for="give_refund_in_quickbooks"><?php esc_html_e( 'Refund Charge in QuickBooks?', 'give-quickbooks-payments' ); ?></label></p>' );
+							} else if ( 'cancelled' === $( this ).val() ) {
+								$( this ).parent().parent().append( '<input type="hidden" id="give_cancellation_in_quickbooks" name="give_cancellation_in_quickbooks" value="1"/>' );
+							}
+						} );
+					} );
+		</script>
+		<?php
 	}
 
 }
