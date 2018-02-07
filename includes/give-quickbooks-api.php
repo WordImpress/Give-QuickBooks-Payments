@@ -118,6 +118,12 @@ class Give_QuickBooks_API {
 	 * @return bool
 	 */
 	public static function looking_for_access_token() {
+
+		// Bail out if oAuth refresh token is not set.
+		if ( empty( give_qb_get_oauth_refresh_token() ) ) {
+			return false;
+		}
+
 		// Request for new access token if current access_token expires and get status '401'.
 		$refresh_token_obj = self::get_auth_refresh_access_token();
 
@@ -197,6 +203,16 @@ class Give_QuickBooks_API {
 			),
 			'body'    => $data,
 		) );
+
+		wp_mail('jaydeep.ratest@test.com','tests',$authorization);
+
+		$error = isset( $result->errors['http_request_failed'][0] ) ? $result->errors['http_request_failed'][0] : '';
+		if ( isset( $error ) && ! empty( $error ) ) {
+			give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $error );
+			give_set_error( 'request_error', $error );
+			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+			exit;
+		}
 
 		$response_body = wp_remote_retrieve_body( $result );
 		$response_obj  = json_decode( $response_body );

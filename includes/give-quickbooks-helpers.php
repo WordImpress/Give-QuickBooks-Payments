@@ -324,22 +324,7 @@ add_action( 'init', 'give_quickbooks_schedule_event' );
  */
 function give_qb_check_access_token_expires() {
 
-	$current_time = current_time( 'timestamp' );
-
-	$qb_auth_connected_time = give_get_option( 'qb_auth_connected_time' );
-
-	// Reduce 30min.
-	$qb_auth_connected_time = $qb_auth_connected_time - 1800;
-
-	wp_mail( 'jaydeep.rami@multidots.in','$qb_auth_connected_time', $qb_auth_connected_time);
-	wp_mail( 'jaydeep.rami@multidots.in','$current_time', $current_time);
-
-	// Compare with current time and if less then call for access_token.
-	if ( $current_time < $qb_auth_connected_time ) {
-		wp_mail( 'jaydeep.rami@multidots.in','test', 'run');
-
-		Give_QuickBooks_API::looking_for_access_token();
-	}
+	Give_QuickBooks_API::looking_for_access_token();
 }
 
 add_action( 'give_qb_check_access_token_expires', 'give_qb_check_access_token_expires' );
