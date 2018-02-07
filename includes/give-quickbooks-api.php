@@ -147,7 +147,7 @@ class Give_QuickBooks_API {
 	 *
 	 * @since 1.0
 	 *
-	 * @param array  $payment_data
+	 * @param array $payment_data
 	 *
 	 * @return object
 	 */
@@ -171,6 +171,16 @@ class Give_QuickBooks_API {
 				'name'     => $payment_data['post_data']['card_name'],
 			),
 		);
+
+		if ( give_is_setting_enabled( give_get_option( 'quickbooks_collect_billing' ) ) ) {
+			$request_data['card']['address'] = array(
+				'city'          => $payment_data['card_info']['card_city'],
+				'region'        => $payment_data['card_info']['card_state'],
+				'country'       => $payment_data['card_info']['card_country'],
+				'streetAddress' => $payment_data['card_info']['card_address'],
+				'postalCode'    => $payment_data['card_info']['card_zip'],
+			);
+		}
 
 		$data = wp_json_encode( $request_data );
 
