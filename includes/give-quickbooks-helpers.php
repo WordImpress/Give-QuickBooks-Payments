@@ -115,6 +115,17 @@ function give_qb_authorization_header() {
 }
 
 /**
+ * QuickBooks Frontend label.
+ *
+ * @since  1.0
+ *
+ * @return string
+ */
+function give_qb_payment_method_label() {
+	return ( give_get_option( 'quickbooks_payment_method_label', false ) ? give_get_option( 'quickbooks_payment_method_label', '' ) : __( 'Credit Card (QuickBooks)', 'give-quickbooks-payments' ) );
+}
+
+/**
  * Handle Error message.
  *
  * @since 1.0

@@ -120,7 +120,7 @@ class Give_QuickBooks_Gateway {
 		// Register the QuickBooks Gateway values.
 		$gateways['quickbooks'] = array(
 			'admin_label'    => __( 'QuickBooks', 'give-quickbooks-payments' ),
-			'checkout_label' => __( 'Credit Card (QuickBooks)', 'give-quickbooks-payments' ),
+			'checkout_label' => give_qb_payment_method_label(),
 		);
 
 		return $gateways;
@@ -311,10 +311,9 @@ class Give_QuickBooks_Gateway {
 			give_update_meta( $payment_id, '_give_quickbooks_refunded_id', $parsed_resp->id );
 
 			// Insert note about refund.
-			give_insert_payment_note( $payment_id, __( 'Refund successfully completed. Refund ID:'. $parsed_resp->id, 'give-quickbooks-payments' ) );
+			give_insert_payment_note( $payment_id, __( 'Refund successfully completed. Refund ID: ' . $parsed_resp->id, 'give-quickbooks-payments' ) );
 
 		}
-
 
 		return true;
 	}

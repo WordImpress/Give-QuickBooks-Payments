@@ -94,6 +94,13 @@ class Give_QuickBooks_Admin {
 				'type' => 'checkbox',
 			),
 			array(
+				'name'    => __( 'Payment Method Label', 'give-quickbooks-payments' ),
+				'desc'    => __( 'Payment method label will be appear on frontend.', 'give-quickbooks-payments' ),
+				'id'      => 'quickbooks_payment_method_label',
+				'default' => give_qb_payment_method_label(),
+				'type'    => 'text',
+			),
+			array(
 				'name'  => __( 'Give QuickBooks Gateway Settings Docs Link', 'give-quickbooks-payments' ),
 				'url'   => esc_url( 'https://givewp.com/documentation/add-ons/#/' ),
 				'title' => __( 'Give QuickBooks Gateway Settings', 'give-quickbooks-payments' ),
