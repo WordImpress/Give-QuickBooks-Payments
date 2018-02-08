@@ -21,12 +21,10 @@ class Give_QuickBooks_API {
 	 */
 	public static function get_auth_access_token( $code ) {
 
-		// Get Authorization Header.
-		$authorization_header_info = give_qb_authorization_header();
-
 		$result = wp_remote_post( GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT, array(
+			'timeout' => 60,
 			'headers' => array(
-				'Authorization' => $authorization_header_info,
+				'Authorization' => give_qb_authorization_header(),
 				'Content-Type'  => 'application/x-www-form-urlencoded',
 			),
 			'body'    => array(
@@ -49,6 +47,7 @@ class Give_QuickBooks_API {
 	public static function get_auth_refresh_access_token() {
 
 		$result = wp_remote_post( GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT, array(
+			'timeout' => 60,
 			'headers' => array(
 				'Authorization' => give_qb_authorization_header(),
 				'Content-Type'  => 'application/x-www-form-urlencoded',
@@ -88,6 +87,7 @@ class Give_QuickBooks_API {
 
 		$base_url = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
 		$result   = wp_remote_post( $base_url . '/quickbooks/v4/payments/tokens', array(
+			'timeout' => 60,
 			'headers' => array(
 				'content-type' => 'application/json',
 			),
@@ -196,6 +196,7 @@ class Give_QuickBooks_API {
 		$base_url          = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
 
 		$result = wp_remote_post( $base_url . '/quickbooks/v4/payments/charges', array(
+			'timeout' => 60,
 			'headers' => array(
 				'content-type'  => 'application/json',
 				'Request-Id'    => give_qb_generate_unique_request_id(),
@@ -223,7 +224,7 @@ class Give_QuickBooks_API {
 	 *
 	 * @since 1.0
 	 *
-	 * @param $charge_id
+	 * @param       $charge_id
 	 * @param array $payment_data
 	 *
 	 * @return array|bool|mixed|object
@@ -240,13 +241,14 @@ class Give_QuickBooks_API {
 		$base_url          = give_is_test_mode() ? GIVE_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_QUICKBOOKS_PRODUCTION_BASE_URL;
 
 		$request_data = array(
-			'id'   => $charge_id,
-			'amount'   => $payment_data['give-payment-total'],
+			'id'     => $charge_id,
+			'amount' => $payment_data['give-payment-total'],
 		);
 
 		$data = wp_json_encode( $request_data );
 
 		$result = wp_remote_post( $base_url . '/quickbooks/v4/payments/charges/' . $charge_id . '/refunds', array(
+			'timeout' => 60,
 			'headers' => array(
 				'content-type'  => 'application/json',
 				'Request-Id'    => give_qb_generate_unique_request_id(),
