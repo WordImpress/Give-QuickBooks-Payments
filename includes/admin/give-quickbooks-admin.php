@@ -83,7 +83,7 @@ class Give_QuickBooks_Admin {
 			),
 			array(
 				'name' => __( 'Connect / Disconnect', 'give-quickbooks-payments' ),
-				'desc' => 'Connect / Disconnect Development or Production.',
+				'desc' => 'Connect / Disconnect oAuth for Development/Production.',
 				'id'   => 'give_quickbooks_auth_button',
 				'type' => 'quickbooks_auth_button',
 			),
@@ -142,19 +142,10 @@ class Give_QuickBooks_Admin {
 	 */
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
 
-		$client_id = give_qb_get_client_id();
-		$refresh_token = give_qb_get_oauth_refresh_token();
-		$connected = false;
-
-	/*	if ( ! empty( $refresh_token ) ) {
-			$result = Give_QuickBooks_API::get_auth_refresh_access_token();
-
-			// Check the response code
-			$response_body = wp_remote_retrieve_body( (array) $result );
-			$response_code = wp_remote_retrieve_response_code( (array) $result );
-			$response_obj  = json_decode( $response_body );
-		}*/
-
+		$connected     = false;
+		if ( ! empty( give_qb_get_client_id() ) && ! empty( give_qb_get_auth_code() ) ) {
+			$connected = true;
+		}
 		?>
 		<tr valign="top" <?php echo ! empty( $value['wrapper_class'] ) ? 'class="' . $value['wrapper_class'] . '"' : '' ?>>
 			<th scope="row" class="titledesc">
@@ -165,14 +156,21 @@ class Give_QuickBooks_Admin {
 				   href="<?php echo $this->get_qb_connect_url(); ?>">
 					<img width="225px" src="<?php echo GIVE_QUICKBOOKS_PLUGIN_URL . 'assets/images/qb_connect_bg.png' ?>">
 				</a>
+				<?php if ( ! $connected ) { ?>
+					<p class="qb-auth-status-wrap">
+						<strong style="float: left; margin-right: 5px;" class="qb-auth-status-label"><?php _e( 'Status: ', 'give-quickbooks-payments' ); ?></strong>
+						<span class="qb-auth-status" style="font-style: italic; float:left; color: red;"><?php _e( 'Not Connected', 'give-quickbooks-payments' ); ?></span>
+					</p>
+				<?php } else { ?>
+					<p class="qb-auth-status-wrap">
+						<strong style="float: left; margin-right: 5px;" class="qb-auth-status-label"><?php _e( 'Status: ', 'give-quickbooks-payments' ); ?></strong>
+						<span class="qb-auth-status" style="font-style: italic; float:left; color: green;"><?php _e( 'Connected', 'give-quickbooks-payments' ); ?></span>
+					</p>
+					<?php
+				} ?>
+				<p style="width: 100%; float: left; clear: both;" class="give-field-description"><?php echo Give_Admin_Settings::get_field_description( $value ); ?></p>
 			</td>
 
-			<?php if ( empty( $client_id ) && empty( $auth_code ) ): ?>
-				<td class="qb-auth-status-wrap" colspan="2">
-					<strong class="qb-auth-status-label"><?php _e( 'Status: ', 'give-quickbooks-payments' ); ?></strong>
-					<span class="qb-auth-status" style="font-style: italic; float:left;"><?php _e( 'Not Connected', 'give-quickbooks-payments' ); ?></span>
-				</td>
-			<?php endif; ?>
 		</tr>
 		<?php
 	}
