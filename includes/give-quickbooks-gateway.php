@@ -56,6 +56,11 @@ class Give_QuickBooks_Gateway {
 	 */
 	public function get_access_token_from_auth_code() {
 
+		$section = give_get_current_setting_section();
+		if ( isset( $section ) && 'quickbooks?error=access_denied' === $section ) {
+			wp_redirect( add_query_arg( 'give-message', 'qb-auth-rejected', give_qb_get_settings_url() ) );
+			exit;
+		}
 		// Bail out, if not getting auth `code` from the request param.
 		if ( empty( $_GET['code'] ) ) {
 			return false;

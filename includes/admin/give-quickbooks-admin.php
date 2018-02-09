@@ -231,7 +231,16 @@ class Give_QuickBooks_Admin {
 							'show'        => true,
 						) );
 						break;
+					case 'qb-auth-rejected' :
+						Give()->notices->register_notice( array(
+							'id'          => 'qb-auth-rejected',
+							'type'        => 'error',
+							'description' => __( 'You have not authenticated with QuickBooks.', 'give-quickbooks-payments' ),
+							'show'        => true,
+						) );
+						break;
 				}
+
 			}
 		}
 	}
