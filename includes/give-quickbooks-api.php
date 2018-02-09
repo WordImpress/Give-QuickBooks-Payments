@@ -118,7 +118,6 @@ class Give_QuickBooks_API {
 	 * @return bool
 	 */
 	public static function looking_for_access_token() {
-
 		// Bail out if oAuth refresh token is not set.
 		if ( empty( give_qb_get_oauth_refresh_token() ) ) {
 			return false;
@@ -144,6 +143,9 @@ class Give_QuickBooks_API {
 				$x_refresh_token_expires_in = $refresh_token_object->x_refresh_token_expires_in;
 				give_update_option( 'qb_auth_connected_time', $current_time + 3600 );
 				give_update_option( 'qb_auth_x_refresh_token_expires_in', $x_refresh_token_expires_in );
+			} else {
+				give_update_option( 'give_quickbooks_access_token', '' );
+				give_update_option( 'give_quickbooks_refresh_token', '' );
 			}
 		}
 	}

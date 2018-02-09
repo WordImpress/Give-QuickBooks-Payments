@@ -334,7 +334,6 @@ add_action( 'init', 'give_quickbooks_schedule_event' );
  * @since 1.0
  */
 function give_qb_check_access_token_expires() {
-
 	Give_QuickBooks_API::looking_for_access_token();
 }
 

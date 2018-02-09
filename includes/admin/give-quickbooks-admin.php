@@ -154,6 +154,10 @@ class Give_QuickBooks_Admin {
 			if ( 200 === $response_code ) {
 				give_update_option( 'give_qb_connected', true );
 				$connection_status = true;
+			} else {
+				give_update_option( 'give_quickbooks_access_token', '' );
+				give_update_option( 'give_quickbooks_refresh_token', '' );
+				give_update_option( 'give_qb_connected', false );
 			}
 		}
 		?>

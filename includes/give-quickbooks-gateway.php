@@ -132,7 +132,7 @@ class Give_QuickBooks_Gateway {
 	}
 
 	/**
-	 * GoCardless process the payment.
+	 * QuickBooks process the payment.
 	 *
 	 * @access  public
 	 * @since   1.0.0
@@ -143,7 +143,6 @@ class Give_QuickBooks_Gateway {
 	 *                                  occurred while doing payment process.
 	 */
 	public static function process_payment( $payment_data ) {
-
 		// Validate the gateway_nonce.
 		give_validate_nonce( $payment_data['gateway_nonce'], 'give-gateway' );
 
@@ -172,16 +171,8 @@ class Give_QuickBooks_Gateway {
 		give_set_payment_transaction_id( $payment_id, $payment_process_response->id );
 		give_update_payment_meta( $payment_id, '_give_qb_auth_code', $payment_process_response->authCode );
 
-		switch ( $payment_process_response->status ) {
-			case ( 'CAPTURED' ):
-				give_update_payment_status( $payment_id, 'publish' );
-				break;
-			case ( 'CANCELLED' ):
-				give_update_payment_status( $payment_id, 'cancelled' );
-				break;
-			case ( 'REFUNDED' ):
-				give_update_payment_status( $payment_id, 'refunded' );
-				break;
+		if ( 'CAPTURED' === $payment_process_response->status ) {
+			give_update_payment_status( $payment_id, 'publish' );
 		}
 
 		// Redirect to give success page.
