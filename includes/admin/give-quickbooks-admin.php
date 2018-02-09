@@ -142,21 +142,18 @@ class Give_QuickBooks_Admin {
 	 */
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
 
-		$connected    = false;
-		$is_connected = give_get_option( 'give_qb_connected', false );
-
+		$connection_status =  false;
 		if ( ! empty( give_qb_get_client_id() )
 		     && ! empty( give_qb_get_auth_code() )
 		     && 'quickbooks' === give_get_current_setting_section()
 		) {
-			if ( ! $is_connected ) {
-				$auth_response = Give_QuickBooks_API::get_auth_refresh_access_token();
-				$response_code = wp_remote_retrieve_response_code( (array) $auth_response );
+			$auth_response = Give_QuickBooks_API::get_auth_refresh_access_token();
+			$response_code = wp_remote_retrieve_response_code( (array) $auth_response );
 
-				if ( 200 === $response_code ) {
-					$connected = true;
-					give_update_option( 'give_qb_connected', true );
-				}
+			give_update_option( 'give_qb_connected', false );
+			if ( 200 === $response_code ) {
+				give_update_option( 'give_qb_connected', true );
+				$connection_status = true;
 			}
 		}
 		?>
@@ -169,7 +166,7 @@ class Give_QuickBooks_Admin {
 				   href="<?php echo $this->get_qb_connect_url(); ?>">
 					<img width="225px" src="<?php echo GIVE_QUICKBOOKS_PLUGIN_URL . 'assets/images/qb_connect_bg.png' ?>">
 				</a>
-				<?php if ( ! $connected ) { ?>
+				<?php if ( ! $connection_status ) { ?>
 					<p class="qb-auth-status-wrap">
 						<strong style="float: left; margin-right: 5px;" class="qb-auth-status-label"><?php _e( 'Status: ', 'give-quickbooks-payments' ); ?></strong>
 						<span class="qb-auth-status" style="font-style: italic; float:left; color: red;"><?php _e( 'Not Connected', 'give-quickbooks-payments' ); ?></span>
