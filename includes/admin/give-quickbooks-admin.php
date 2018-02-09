@@ -142,9 +142,22 @@ class Give_QuickBooks_Admin {
 	 */
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
 
-		$connected     = false;
-		if ( ! empty( give_qb_get_client_id() ) && ! empty( give_qb_get_auth_code() ) ) {
-			$connected = true;
+		$connected    = false;
+		$is_connected = give_get_option( 'give_qb_connected', false );
+
+		if ( ! empty( give_qb_get_client_id() )
+		     && ! empty( give_qb_get_auth_code() )
+		     && 'quickbooks' === give_get_current_setting_section()
+		) {
+			if ( ! $is_connected ) {
+				$auth_response = Give_QuickBooks_API::get_auth_refresh_access_token();
+				$response_code = wp_remote_retrieve_response_code( (array) $auth_response );
+
+				if ( 200 === $response_code ) {
+					$connected = true;
+					give_update_option( 'give_qb_connected', true );
+				}
+			}
 		}
 		?>
 		<tr valign="top" <?php echo ! empty( $value['wrapper_class'] ) ? 'class="' . $value['wrapper_class'] . '"' : '' ?>>
