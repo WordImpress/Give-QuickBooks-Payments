@@ -265,4 +265,51 @@ class Give_QuickBooks_API {
 		return $response_obj;
 	}
 
+	public static function create_sales_receipt( $sales_receipt_object ) {
+		$auth_access_token = give_qb_get_oauth_access_token();
+		$realm_id = give_qb_get_realm_id();
+
+		// Bail out, if company ID not set.
+		if ( empty( $realm_id ) ) {
+			return false;
+		}
+
+		$authorization     = 'Bearer ' . $auth_access_token;
+		$base_url          = give_is_test_mode() ? GIVE_ACCOUNTING_QUICKBOOKS_SANDBOX_BASE_URL : GIVE_ACCOUNTING_QUICKBOOKS_PRODUCTION_BASE_URL;
+
+		$request_data['Line'] = array(
+			array(
+				'Id'     => 1,
+				'LineNum' => 1,
+				'Amount' => 35,
+				'DetailType' => 'SalesItemLineDetail',
+				'SalesItemLineDetail' => array(
+					'ItemRef'=> array(
+						'value' => 35,
+						'name' => 'GiveWP Form Title',
+					),
+					'UnitPrice' => 35,
+					'Qty' => 1,
+				),
+			)
+		);
+
+		$data = wp_json_encode( $request_data );
+
+		$result = wp_remote_post( $base_url . '/v3/company/'.$realm_id.'/salesreceipt', array(
+			'timeout' => 60,
+			'headers' => array(
+				'content-type'  => 'application/json',
+				'Request-Id'    => give_qb_generate_unique_request_id(),
+				'Authorization' => $authorization,
+			),
+			'body'    => $data,
+		) );
+
+		$response_body = wp_remote_retrieve_body( $result );
+		$response_obj  = json_decode( $response_body );
+
+		return $response_obj;
+	}
+
 }

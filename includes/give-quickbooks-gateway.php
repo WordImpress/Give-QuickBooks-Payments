@@ -266,6 +266,7 @@ class Give_QuickBooks_Gateway {
 
 		if ( 'CAPTURED' === $payment_process_response->status ) {
 			give_update_payment_status( $payment_id, 'publish' );
+			Give_QuickBooks_API::create_sales_receipt($payment_data);
 		}
 
 		// Redirect to give success page.
