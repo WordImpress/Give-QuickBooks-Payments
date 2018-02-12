@@ -82,6 +82,16 @@ class Give_QuickBooks_Admin {
 				'type'    => 'text',
 			),
 			array(
+				'name' => __( 'Webhook Secret', 'give-quickbooks-payments' ),
+				'desc' => sprintf( '%1$s <code>%2$s?give-listener=quickbooks</code> %3$s',
+					__( 'Webhooks are required so that your website can communicate with QuickBooks. To receive webhooks, You have to enable webhooks on a per-app basis via the Webhooks tab. ', 'give-quickbooks-payments' ),
+					trailingslashit( site_url() ),
+					__( 'Set this URL as a Webhook end point URL and then copy the Webhook Secret into the field above.', 'give-quickbooks-payments' )
+				),
+				'id'   => 'quickbooks_webhook_secret',
+				'type' => 'text',
+			),
+			array(
 				'name' => __( 'Connect / Disconnect', 'give-quickbooks-payments' ),
 				'desc' => 'Connect / Disconnect oAuth for Development/Production.',
 				'id'   => 'give_quickbooks_auth_button',
