@@ -41,6 +41,99 @@ class Give_QuickBooks_Gateway {
 		// Register hooks for QuickBooks refund.
 		add_action( 'give_update_payment_status', array( $this, 'process_refund' ), 200, 3 );
 
+		// Handle webhook of QuickBooks.
+		add_action( 'init', array( $this, 'listener_quickbooks_webhook' ) );
+
+	}
+
+	/**
+	 * Handle Webhook.
+	 *
+	 * @since 1.0
+	 * @access public
+	 */
+	public function listener_quickbooks_webhook() {
+
+		$webhook_secret = give_get_option( 'quickbooks_webhook_secret' );
+
+		// Get the data from webhook request.
+		$raw_payload = file_get_contents( 'php://input' );
+		$signature   = ! empty( $_SERVER['HTTP_INTUIT_SIGNATURE'] ) ? $_SERVER['HTTP_INTUIT_SIGNATURE'] : '';
+
+		if ( isset( $_GET['give-listener'] )
+		     && 'quickbooks' === $_GET['give-listener']
+		     && isset( $signature )
+		) {
+
+			$signature = bin2hex( base64_decode( $signature ) );
+
+			// Generating web hook signature.
+			$calc_signature = hash_hmac( 'sha256', $raw_payload, $webhook_secret );
+
+			try {
+
+				// Verifying webhook signature.
+				if ( $signature !== $calc_signature ) {
+					header( 'HTTP/1.1 498 Invalid signature' );
+					throw new Exception( __( 'Invalid signature.', 'give-quickbooks-payments' ) );
+				}
+
+				$payload = json_decode( $raw_payload, true );
+				wp_mail( 'jaydeep.rami@multidots.in', '$payload', print_r( $payload, true ) );
+				if ( empty( $payload['eventNotifications'] ) ) {
+					header( 'HTTP/1.1 400 Bad request' );
+					throw new Exception( __( 'Missing events Notification in payload.', 'give-quickbooks-payments' ) );
+				}
+
+				$this->webhook_process_payload( $payload['eventNotifications'] );
+
+			} catch ( Exception $e ) {
+
+				give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), esc_html( $e->getMessage() ) );
+				wp_send_json_error( array(
+					'message' => $e->getMessage(),
+				) );
+			}
+			exit;
+
+		}
+
+	}
+
+	/**
+	 * QuickBooks handle webhook request.
+	 *
+	 * @since   1.0
+	 * @access  protected
+	 *
+	 * @param   array $eventNotifications QuickBooks payload data.
+	 *
+	 * @return bool
+	 */
+	protected function webhook_process_payload( $eventNotifications ) {
+
+		foreach ( $eventNotifications as $eventNotification ) {
+
+			if ( ! empty( $eventNotification['realmId'] ) && $eventNotification['realmId'] != give_qb_get_realm_id() ) {
+				return false;
+			}
+
+			foreach ( $eventNotification['dataChangeEvent']['entities'] as $event ) {
+				switch ( $event['name'] ) {
+					case 'Customer':
+						wp_mail( 'testcustomer@gmail.com', 'Customer', print_r( $event, true ) );
+						break;
+					case 'Payment':
+						wp_mail( 'testcustomer@gmail.com', 'Payment', print_r( $event, true ) );
+						break;
+					default:
+						echo sprintf( __( '%s - Unhandled webhook event %s', 'give-quickbooks-payments' ), __METHOD__, $event['name'] );
+				}
+			}
+
+		}
+
+		return true;
 	}
 
 	/**
