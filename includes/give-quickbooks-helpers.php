@@ -89,6 +89,19 @@ function give_qb_get_auth_code() {
 }
 
 /**
+ * Get Company ID.
+ *
+ * @since 1.0
+ * @return mixed
+ */
+function give_qb_get_realm_id() {
+	$give_qb_realm_id = give_get_option( 'give_quickbooks_realm_id' );
+
+	return $give_qb_realm_id;
+}
+
+
+/**
  * Get Settings URL.
  *
  * @since 1.0
