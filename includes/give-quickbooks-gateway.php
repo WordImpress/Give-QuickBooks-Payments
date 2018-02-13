@@ -205,7 +205,7 @@ class Give_QuickBooks_Gateway {
 			'date'            => $payment_data['date'],
 			'user_email'      => $payment_data['user_email'],
 			'purchase_key'    => $payment_data['purchase_key'],
-			'currency'        => give_get_currency(),
+			'currency'        => give_get_currency( $form_id ),
 			'user_info'       => $payment_data['user_info'],
 			'status'          => 'pending',
 			'gateway'         => GIVE_QUICKBOOKS_SLUG,
