@@ -32,7 +32,7 @@ $plugin_settings = array(
 
 foreach ( $give_settings as $setting_key => $setting ) {
 	if ( in_array( $setting_key, $plugin_settings, true )
-	     || 'give_quickbooks' === substr( $setting_key, 0, 20 )
+	     || 'give_quickbooks' === substr( $setting_key, 0, 15 )
 	) {
 		unset( $give_settings[ $setting_key ] );
 	}
