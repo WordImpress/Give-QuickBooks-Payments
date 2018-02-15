@@ -94,8 +94,30 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 		private function setup() {
 			self::$instance->setup_constants();
 
+			self::$instance->init_hooks();
+
 			add_action( 'give_init', array( $this, 'init' ), 10 );
 			add_action( 'plugins_loaded', array( $this, 'check_environment' ), 999 );
+		}
+
+		/**
+		 * Hook into actions and filters.
+		 *
+		 * @since  1.0.0
+		 * @access private
+		 */
+		private function init_hooks() {
+			register_deactivation_hook( GIVE_QUICKBOOKS_PLUGIN_FILE, array( $this, 'give_qb_deactivation_check' ) );
+		}
+
+		/**
+		 * Handle plugin deactivation task.
+		 *
+		 * @since  1.0
+		 * @access public
+		 */
+		public function give_qb_deactivation_check() {
+			wp_clear_scheduled_hook( 'give_qb_check_access_token_expires', array( 'thirty_minute' ) );
 		}
 
 		/**
