@@ -13,7 +13,8 @@ class Give_QuickBooks_API {
 	/**
 	 * Get oAuth access token from Auth Code.
 	 *
-	 * @since 1.0
+	 * @since  1.0
+	 * @access public
 	 *
 	 * @param $code
 	 *
@@ -21,17 +22,10 @@ class Give_QuickBooks_API {
 	 */
 	public static function get_auth_access_token( $code ) {
 
-		$result = wp_remote_post( GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT, array(
-			'timeout' => 60,
-			'headers' => array(
-				'Authorization' => give_qb_authorization_header(),
-				'Content-Type'  => 'application/x-www-form-urlencoded',
-			),
-			'body'    => array(
-				'grant_type'   => 'authorization_code',
-				'code'         => $code,
-				'redirect_uri' => give_qb_get_settings_url(),
-			),
+		$result = self::quickbooks_api_request( array(
+			'grant_type'   => 'authorization_code',
+			'code'         => $code,
+			'redirect_uri' => give_qb_get_settings_url(),
 		) );
 
 		return $result;
@@ -40,22 +34,39 @@ class Give_QuickBooks_API {
 	/**
 	 * Get OAuth Access Token from the refresh token.
 	 *
-	 * @since 1.0
+	 * @since  1.0
+	 * @access public
 	 *
 	 * @return object
 	 */
 	public static function get_auth_refresh_access_token() {
 
+		$result = self::quickbooks_api_request( array(
+			'grant_type'    => 'refresh_token',
+			'refresh_token' => give_qb_get_oauth_refresh_token(),
+		) );
+
+		return $result;
+	}
+
+	/**
+	 * QuickBooks API request.
+	 *
+	 * @since 1.0
+	 * @since public
+	 *
+	 * @param array $body
+	 *
+	 * @return array|\WP_Error|object
+	 */
+	public static function quickbooks_api_request( $body ) {
 		$result = wp_remote_post( GIVE_QUICKBOOKS_ACCESS_TOKEN_ENDPOINT, array(
 			'timeout' => 60,
 			'headers' => array(
 				'Authorization' => give_qb_authorization_header(),
 				'Content-Type'  => 'application/x-www-form-urlencoded',
 			),
-			'body'    => array(
-				'grant_type'    => 'refresh_token',
-				'refresh_token' => give_qb_get_oauth_refresh_token(),
-			),
+			'body'    => $body,
 		) );
 
 		return $result;
@@ -148,6 +159,8 @@ class Give_QuickBooks_API {
 				give_update_option( 'give_quickbooks_refresh_token', '' );
 			}
 		}
+
+		return true;
 	}
 
 	/**
@@ -226,8 +239,8 @@ class Give_QuickBooks_API {
 	 *
 	 * @since 1.0
 	 *
-	 * @param       $charge_id
-	 * @param array $payment_data
+	 * @param string $charge_id
+	 * @param array  $payment_data
 	 *
 	 * @return array|bool|mixed|object
 	 */

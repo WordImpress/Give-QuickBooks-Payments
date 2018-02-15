@@ -249,12 +249,6 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			if ( ! defined( 'GIVE_QUICKBOOKS_OAUTH_BASE_URL' ) ) {
 				define( 'GIVE_QUICKBOOKS_OAUTH_BASE_URL', 'https://appcenter.intuit.com/connect/oauth2' );
 			}
-			if ( ! defined( 'GIVE_ACCOUNTING_QUICKBOOKS_SANDBOX_BASE_URL' ) ) {
-				define( 'GIVE_ACCOUNTING_QUICKBOOKS_SANDBOX_BASE_URL', 'https://sandbox-quickbooks.api.intuit.com' );
-			}
-			if ( ! defined( 'GIVE_ACCOUNTING_QUICKBOOKS_PRODUCTION_BASE_URL' ) ) {
-				define( 'GIVE_ACCOUNTING_QUICKBOOKS_PRODUCTION_BASE_URL', 'https://quickbooks.api.intuit.com' );
-			}
 
 		}
 
@@ -337,7 +331,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			 */
 			require_once GIVE_QUICKBOOKS_PLUGIN_DIR . '/includes/give-quickbooks-api.php';
 
-			self::$instance->plugin_admin      = new Give_QuickBooks_Admin();
+			self::$instance->plugin_admin       = new Give_QuickBooks_Admin();
 			self::$instance->quickbooks_gateway = new Give_QuickBooks_Gateway();
 
 		}

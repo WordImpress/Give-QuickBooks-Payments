@@ -82,8 +82,8 @@ class Give_QuickBooks_Admin {
 				'type'    => 'text',
 			),
 			array(
-				'name' => __( 'Connect / Disconnect', 'give-quickbooks-payments' ),
-				'desc' => 'Connect / Disconnect oAuth for Development/Production.',
+				'name' => __( 'Connect to QuickBooks', 'give-quickbooks-payments' ),
+				'desc' => 'Connect oAuth for Development/Production.',
 				'id'   => 'give_quickbooks_auth_button',
 				'type' => 'quickbooks_auth_button',
 			),
@@ -142,7 +142,7 @@ class Give_QuickBooks_Admin {
 	 */
 	public function quickbooks_auth_button_callback( $value, $option_value ) {
 
-		$connection_status =  false;
+		$connection_status = false;
 		if ( ! empty( give_qb_get_client_id() )
 		     && ! empty( give_qb_get_auth_code() )
 		     && 'quickbooks' === give_get_current_setting_section()

@@ -49,7 +49,8 @@ class Give_QuickBooks_Gateway {
 	 * Here we exchange auth_code and get new oAuth 'access_token'.
 	 * Which we will use for the Payment process.
 	 *
-	 * @since 1.0
+	 * @since  1.0
+	 * @access public
 	 *
 	 * @return bool
 	 * @throws \Exception
@@ -73,7 +74,7 @@ class Give_QuickBooks_Gateway {
 
 		$responseState = ! empty( $_GET['state'] ) ? give_clean( $_GET['state'] ) : 'RandomState';
 		if ( strcmp( 'RandomState', $responseState ) != 0 ) {
-			throw new Exception( "The state is not correct from Intuit Server. Consider your app is hacked." );
+			throw new Exception( __( 'The state is not correct from Intuit Server. Consider your app is hacked.', 'give-quickbooks-payments' ) );
 		}
 
 		$realmId = ! empty( $_GET['realmId'] ) ? give_clean( $_GET['realmId'] ) : '';
@@ -143,40 +144,53 @@ class Give_QuickBooks_Gateway {
 	 *                                  occurred while doing payment process.
 	 */
 	public static function process_payment( $payment_data ) {
-		// Validate the gateway_nonce.
-		give_validate_nonce( $payment_data['gateway_nonce'], 'give-gateway' );
+		// Make sure we don't have any left over errors present.
+		give_clear_errors();
 
-		// Process Payment.
-		$payment_process_response = Give_QuickBooks_API::quickbooks_payment_request( $payment_data );
+		// Any errors?
+		$errors = give_get_errors();
 
-		// Check any error?
-		give_qb_handle_error( $payment_process_response );
+		// No errors, proceed.
+		if ( ! $errors ) {
+			// Validate the gateway_nonce.
+			give_validate_nonce( $payment_data['gateway_nonce'], 'give-gateway' );
 
-		// Create new payment for donation.
-		$payment_id = self::quickbooks_create_payment( $payment_data );
+			// Process Payment.
+			$payment_process_response = Give_QuickBooks_API::quickbooks_payment_request( $payment_data );
 
-		// Check if payment is created.
-		if ( empty( $payment_id ) ) {
+			// Check any error?
+			give_qb_handle_error( $payment_process_response );
 
-			// Record the error.
-			give_record_gateway_error( __( 'Payment Error', 'give-quickbooks-payments' ), sprintf( __( 'Payment creation failed before sending donor to QuickBooks. Payment data: %s', 'give-quickbooks-payments' ), json_encode( $payment_data ) ), $payment_id );
+			// Create new payment for donation.
+			$payment_id = self::quickbooks_create_payment( $payment_data );
 
-			give_set_error( 'payment_creation_error', __( 'Payment creation failed. Please try again', 'give-quickbooks-payments' ) );
+			// Check if payment is created.
+			if ( empty( $payment_id ) ) {
 
+				// Record the error.
+				give_record_gateway_error( __( 'Payment Error', 'give-quickbooks-payments' ), sprintf( __( 'Payment creation failed before sending donor to QuickBooks. Payment data: %s', 'give-quickbooks-payments' ), json_encode( $payment_data ) ), $payment_id );
+
+				give_set_error( 'payment_creation_error', __( 'Payment creation failed. Please try again', 'give-quickbooks-payments' ) );
+
+				// Problems? Send back.
+				give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
+			}
+
+			// Set the payment transaction ID.
+			give_set_payment_transaction_id( $payment_id, $payment_process_response->id );
+			give_update_payment_meta( $payment_id, '_give_qb_auth_code', $payment_process_response->authCode );
+
+			if ( 'CAPTURED' === $payment_process_response->status ) {
+				give_update_payment_status( $payment_id, 'publish' );
+			}
+
+			// Redirect to give success page.
+			give_send_to_success_page();
+
+		} else {
 			// Problems? Send back.
 			give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
 		}
-
-		// Set the payment transaction ID.
-		give_set_payment_transaction_id( $payment_id, $payment_process_response->id );
-		give_update_payment_meta( $payment_id, '_give_qb_auth_code', $payment_process_response->authCode );
-
-		if ( 'CAPTURED' === $payment_process_response->status ) {
-			give_update_payment_status( $payment_id, 'publish' );
-		}
-
-		// Redirect to give success page.
-		give_send_to_success_page();
 
 		return true;
 	}
@@ -252,6 +266,47 @@ class Give_QuickBooks_Gateway {
 		// Create refund on QuickBooks.
 		$parsed_resp = Give_QuickBooks_API::create_refund( $charge_id, $payment_data );
 
+		// Handle refund errors
+		self::handle_refund_errors( $parsed_resp, $payment_id, $old_status );
+
+		// Update Refund status.
+		if ( isset( $parsed_resp->status ) && 'ISSUED' === $parsed_resp->status ) {
+
+			// Add refund id into payment.
+			give_update_meta( $payment_id, '_give_quickbooks_refunded_id', $parsed_resp->id );
+
+			// Insert note about refund.
+			give_insert_payment_note( $payment_id, sprintf( __( 'Refund successfully completed. Refund ID: %d', 'give-quickbooks-payments' ), $parsed_resp->id ) );
+
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Handle Refund Errors.
+	 *
+	 * @access public
+	 * @since  1.0
+	 *
+	 * @param object $parsed_resp
+	 * @param int    $payment_id
+	 * @param string $old_status
+	 *
+	 * @return bool
+	 */
+	public static function handle_refund_errors( $parsed_resp, $payment_id, $old_status ) {
+
+		if ( empty( $parsed_resp->id ) ) {
+			give_insert_payment_note( $payment_id, __( 'Unable to refund via QuickBooks. QuickBooks returns unexpected refund response.', 'give-quickbooks-payments' ) );
+
+			// Change it to previous status.
+			give_update_payment_status( $payment_id, $old_status );
+
+			return false;
+		}
+
 		if ( ! isset( $parsed_resp ) ) {
 			$message = __( 'Authentication Fail', 'give-quickbooks-payments' );
 			give_insert_payment_note( $payment_id, sprintf( __( 'Unable to refund via QuickBooks: %s', 'give-quickbooks-payments' ), $message ) );
@@ -295,23 +350,6 @@ class Give_QuickBooks_Gateway {
 			return false;
 		}
 
-		if ( empty( $parsed_resp->id ) ) {
-			give_insert_payment_note( $payment_id, __( 'Unable to refund via QuickBooks. QuickBooks returns unexpected refund response.', 'give-quickbooks-payments' ) );
-
-			return false;
-		}
-
-		if ( isset( $parsed_resp->status ) && 'ISSUED' === $parsed_resp->status ) {
-
-			// Add refund id into payment.
-			give_update_meta( $payment_id, '_give_quickbooks_refunded_id', $parsed_resp->id );
-
-			// Insert note about refund.
-			give_insert_payment_note( $payment_id, __( 'Refund successfully completed. Refund ID: ' . $parsed_resp->id, 'give-quickbooks-payments' ) );
-
-		}
-
 		return true;
 	}
-
 }
