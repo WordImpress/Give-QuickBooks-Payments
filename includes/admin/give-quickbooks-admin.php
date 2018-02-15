@@ -89,7 +89,7 @@ class Give_QuickBooks_Admin {
 			),
 			array(
 				'name' => __( 'Collect Billing Details', 'give-quickbooks-payments' ),
-				'desc' => __( 'This option will enable the billing details section for Stripe which requires the donor\'s address to complete the donation. These fields are not required by QuickBooks to process the transaction, but you may have the need to collect the data.', 'give-quickbooks-payments' ),
+				'desc' => __( 'This option will enable the billing details section for QuickBooks which requires the donor\'s address to complete the donation. These fields are not required by QuickBooks to process the transaction, but you may have the need to collect the data.', 'give-quickbooks-payments' ),
 				'id'   => 'quickbooks_collect_billing',
 				'type' => 'checkbox',
 			),
@@ -123,7 +123,7 @@ class Give_QuickBooks_Admin {
 	 * @return array
 	 */
 	public function add_section( $sections ) {
-		$sections['quickbooks'] = __( 'QuickBooks Settings', 'give-quickbooks-payments' );
+		$sections[ GIVE_QUICKBOOKS_SLUG ] = __( 'QuickBooks', 'give-quickbooks-payments' );
 
 		return $sections;
 	}
@@ -145,7 +145,7 @@ class Give_QuickBooks_Admin {
 		$connection_status = false;
 		if ( ! empty( give_qb_get_client_id() )
 		     && ! empty( give_qb_get_auth_code() )
-		     && 'quickbooks' === give_get_current_setting_section()
+		     && GIVE_QUICKBOOKS_SLUG === give_get_current_setting_section()
 		) {
 			$auth_response = Give_QuickBooks_API::get_auth_refresh_access_token();
 			$response_code = wp_remote_retrieve_response_code( (array) $auth_response );

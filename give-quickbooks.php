@@ -420,7 +420,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 					'file'              => GIVE_QUICKBOOKS_PLUGIN_FILE,
 					'name'              => __( 'QuickBooks Gateway', 'give-quickbooks-payments' ),
 					'version'           => GIVE_QUICKBOOKS_VERSION,
-					'settings_url'      => admin_url( 'edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=quickbooks' ),
+					'settings_url'      => admin_url( 'edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=' . GIVE_QUICKBOOKS_SLUG ),
 					'documentation_url' => 'https://givewp.com/documentation/add-ons/#/',
 					'support_url'       => 'https://givewp.com/support/',
 					'testing'           => false,
@@ -453,7 +453,7 @@ if ( ! class_exists( 'Give_QuickBooks_Payments' ) ) :
 			}
 
 			$new_actions = array(
-				'settings' => sprintf( '<a href="%1$s">%2$s</a>', admin_url( 'edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=quickbooks' ), __( 'Settings', 'give-quickbooks-payments' ) ),
+				'settings' => sprintf( '<a href="%1$s">%2$s</a>', admin_url( 'edit.php?post_type=give_forms&page=give-settings&tab=gateways&section=' . GIVE_QUICKBOOKS_SLUG ), __( 'Settings', 'give-quickbooks-payments' ) ),
 			);
 
 			return array_merge( $new_actions, $actions );

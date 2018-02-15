@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Generate Random ID
+ * Generate Random ID.
  *
  * @since 1.0
  * @return bool|string
@@ -148,7 +148,7 @@ function give_qb_payment_method_label() {
 function give_qb_handle_error( $parsed_resp ) {
 
 	if ( ! isset( $parsed_resp ) ) {
-		$message = __( 'Authentication Fail', 'give-quickbooks-payments' );
+		$message = __( 'Authentication Fail.', 'give-quickbooks-payments' );
 		give_record_gateway_error( __( 'QuickBooks Error', 'give-quickbooks-payments' ), $message );
 		give_set_error( 'request_error', $message );
 		give_send_back_to_checkout( '?payment-mode=' . GIVE_QUICKBOOKS_SLUG );
@@ -184,7 +184,7 @@ function give_qb_handle_error( $parsed_resp ) {
 }
 
 /**
- * Stripe uses it's own credit card form because the card details are tokenized.
+ * QuickBooks uses it's own credit card form because the card details are tokenized.
  *
  * We don't want the name attributes to be present on the fields in order to
  * prevent them from getting posted to the server.

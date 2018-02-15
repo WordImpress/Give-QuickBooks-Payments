@@ -175,11 +175,12 @@ class Give_QuickBooks_API {
 	public static function quickbooks_payment_request( $payment_data ) {
 
 		$card_expiry       = explode( '/', $payment_data['post_data']['card_expiry'] );
+		$form_id           = intval( $payment_data['post_data']['give-form-id'] );
 		$card_expiry_month = trim( $card_expiry[0] );
 
 		$request_data = array(
 			'amount'   => $payment_data['price'],
-			'currency' => give_get_currency(),
+			'currency' => give_get_currency( $form_id ),
 			'context'  => array(
 				'mobile'      => false,
 				'isEcommerce' => true,

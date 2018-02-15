@@ -124,7 +124,7 @@ class Give_QuickBooks_Gateway {
 	public function register_gateway( $gateways ) {
 
 		// Register the QuickBooks Gateway values.
-		$gateways['quickbooks'] = array(
+		$gateways[ GIVE_QUICKBOOKS_SLUG ] = array(
 			'admin_label'    => __( 'QuickBooks', 'give-quickbooks-payments' ),
 			'checkout_label' => give_qb_payment_method_label(),
 		);
@@ -266,7 +266,7 @@ class Give_QuickBooks_Gateway {
 		// Create refund on QuickBooks.
 		$parsed_resp = Give_QuickBooks_API::create_refund( $charge_id, $payment_data );
 
-		// Handle refund errors
+		// Handle refund errors.
 		self::handle_refund_errors( $parsed_resp, $payment_id, $old_status );
 
 		// Update Refund status.
@@ -298,18 +298,18 @@ class Give_QuickBooks_Gateway {
 	 */
 	public static function handle_refund_errors( $parsed_resp, $payment_id, $old_status ) {
 
-		if ( empty( $parsed_resp->id ) ) {
-			give_insert_payment_note( $payment_id, __( 'Unable to refund via QuickBooks. QuickBooks returns unexpected refund response.', 'give-quickbooks-payments' ) );
-
+		if ( ! isset( $parsed_resp ) ) {
+			$message = __( 'Authentication Fail', 'give-quickbooks-payments' );
+			give_insert_payment_note( $payment_id, sprintf( __( 'Unable to refund via QuickBooks: %s', 'give-quickbooks-payments' ), $message ) );
 			// Change it to previous status.
 			give_update_payment_status( $payment_id, $old_status );
 
 			return false;
 		}
 
-		if ( ! isset( $parsed_resp ) ) {
-			$message = __( 'Authentication Fail', 'give-quickbooks-payments' );
-			give_insert_payment_note( $payment_id, sprintf( __( 'Unable to refund via QuickBooks: %s', 'give-quickbooks-payments' ), $message ) );
+		if ( empty( $parsed_resp->id ) ) {
+			give_insert_payment_note( $payment_id, __( 'Unable to refund via QuickBooks. QuickBooks returns unexpected refund response.', 'give-quickbooks-payments' ) );
+
 			// Change it to previous status.
 			give_update_payment_status( $payment_id, $old_status );
 
