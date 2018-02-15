@@ -194,7 +194,7 @@ class Give_QuickBooks_API {
 			),
 		);
 
-		if ( give_is_setting_enabled( give_get_option( 'quickbooks_collect_billing' ) ) ) {
+		if ( give_is_setting_enabled( give_get_option( 'give_quickbooks_collect_billing' ) ) ) {
 			$request_data['card']['address'] = array(
 				'city'          => $payment_data['card_info']['card_city'],
 				'region'        => $payment_data['card_info']['card_state'],

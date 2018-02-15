@@ -135,7 +135,7 @@ function give_qb_authorization_header() {
  * @return string
  */
 function give_qb_payment_method_label() {
-	return ( give_get_option( 'quickbooks_payment_method_label', false ) ? give_get_option( 'quickbooks_payment_method_label', '' ) : __( 'Credit Card (QuickBooks)', 'give-quickbooks-payments' ) );
+	return ( give_get_option( 'give_quickbooks_payment_method_label', false ) ? give_get_option( 'give_quickbooks_payment_method_label', '' ) : __( 'Credit Card (QuickBooks)', 'give-quickbooks-payments' ) );
 }
 
 /**
@@ -199,7 +199,7 @@ function give_qb_handle_error( $parsed_resp ) {
  */
 function give_quickbooks_credit_card_form( $form_id, $echo = true ) {
 
-	$billing_fields_enabled = give_get_option( 'quickbooks_collect_billing' );
+	$billing_fields_enabled = give_get_option( 'give_quickbooks_collect_billing' );
 
 	ob_start();
 

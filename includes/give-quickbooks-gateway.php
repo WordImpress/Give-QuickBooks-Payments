@@ -98,10 +98,6 @@ class Give_QuickBooks_Gateway {
 			give_update_option( 'give_quickbooks_access_token', $access_token );
 			give_update_option( 'give_quickbooks_refresh_token', $refresh_token );
 
-			$current_time               = current_time( 'timestamp' );
-			$x_refresh_token_expires_in = $response_obj->x_refresh_token_expires_in;
-			give_update_option( 'qb_auth_connected_time', $current_time + 3600 );
-			give_update_option( 'qb_auth_x_refresh_token_expires_in', $x_refresh_token_expires_in );
 		}
 
 		if ( ! empty( $realmId ) ) {

@@ -90,13 +90,13 @@ class Give_QuickBooks_Admin {
 			array(
 				'name' => __( 'Collect Billing Details', 'give-quickbooks-payments' ),
 				'desc' => __( 'This option will enable the billing details section for QuickBooks which requires the donor\'s address to complete the donation. These fields are not required by QuickBooks to process the transaction, but you may have the need to collect the data.', 'give-quickbooks-payments' ),
-				'id'   => 'quickbooks_collect_billing',
+				'id'   => 'give_quickbooks_collect_billing',
 				'type' => 'checkbox',
 			),
 			array(
 				'name'    => __( 'Payment Method Label', 'give-quickbooks-payments' ),
 				'desc'    => __( 'Payment method label will be appear on frontend.', 'give-quickbooks-payments' ),
-				'id'      => 'quickbooks_payment_method_label',
+				'id'      => 'give_quickbooks_payment_method_label',
 				'default' => give_qb_payment_method_label(),
 				'type'    => 'text',
 			),
@@ -150,14 +150,14 @@ class Give_QuickBooks_Admin {
 			$auth_response = Give_QuickBooks_API::get_auth_refresh_access_token();
 			$response_code = wp_remote_retrieve_response_code( (array) $auth_response );
 
-			give_update_option( 'give_qb_connected', false );
+			give_update_option( 'give_quickbooks_connected', false );
 			if ( 200 === $response_code ) {
-				give_update_option( 'give_qb_connected', true );
+				give_update_option( 'give_quickbooks_connected', true );
 				$connection_status = true;
 			} else {
 				give_update_option( 'give_quickbooks_access_token', '' );
 				give_update_option( 'give_quickbooks_refresh_token', '' );
-				give_update_option( 'give_qb_connected', false );
+				give_update_option( 'give_quickbooks_connected', false );
 			}
 		}
 		?>
